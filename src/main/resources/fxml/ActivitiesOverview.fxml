@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import de.perdoctus.fx.ToggleableSeriesChart?>
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.chart.LineChart?>
+<?import javafx.scene.chart.NumberAxis?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.web.WebView?>
+<?import org.controlsfx.control.RangeSlider?>
+<AnchorPane xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.perdoctus.ebikeconnect.gui.ActivitiesOverviewController">
+    <children>
+        <HBox maxHeight="-Infinity" maxWidth="-Infinity" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+            <children>
+                <TableView fx:id="activitiesTable" prefHeight="250.0">
+                    <columns>
+                        <TableColumn fx:id="tcType" editable="false" maxWidth="25" prefWidth="25"/>
+                        <TableColumn fx:id="tcDate" prefWidth="75.0" text="%date"/>
+                        <TableColumn fx:id="tcDistance" prefWidth="75.0" text="%distance"/>
+                        <TableColumn fx:id="tcDuration" prefWidth="75.0" text="%duration"/>
+                    </columns>
+                </TableView>
+                <SplitPane dividerPositions="0.66" orientation="VERTICAL" HBox.hgrow="ALWAYS">
+                    <items>
+                        <AnchorPane minHeight="0.0" minWidth="0.0">
+                            <padding>
+                                <Insets top="0" right="0" left="0" bottom="0"/>
+                            </padding>
+                            <children>
+                                <WebView fx:id="webView" layoutX="150.0" layoutY="33.0" prefHeight="-1.0" prefWidth="-1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
+                            </children>
+                        </AnchorPane>
+                        <VBox>
+                            <children>
+                                <AnchorPane minHeight="0.0" minWidth="0.0">
+                                    <children>
+                                        <ToggleableSeriesChart fx:id="chart" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0">
+                                            <chart>
+                                                <LineChart stylesheets="/fxml/ActivitiesOverview.css" createSymbols="false" animated="false">
+                                                    <xAxis>
+                                                        <NumberAxis fx:id="xAxis" label="%driving-time" side="BOTTOM"/>
+                                                    </xAxis>
+                                                    <yAxis>
+                                                        <NumberAxis fx:id="yAxis" autoRanging="true" side="LEFT"/>
+                                                    </yAxis>
+                                                </LineChart>
+                                            </chart>
+                                        </ToggleableSeriesChart>
+                                    </children>
+                                </AnchorPane>
+                                <RangeSlider fx:id="chartRangeSlider" min="0" max="1500" majorTickUnit="60" minorTickCount="4" showTickMarks="false">
+                                    <padding>
+                                        <Insets left="10" right="10" bottom="4"/>
+                                    </padding>
+                                </RangeSlider>
+                            </children>
+                        </VBox>
+                    </items>
+                </SplitPane>
+            </children>
+        </HBox>
+    </children>
+</AnchorPane>

@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.BorderPane?>
+<BorderPane maxHeight="-Infinity" maxWidth="-Infinity" prefHeight="800.0" prefWidth="1024.0" xmlns="http://javafx.com/javafx/8.0.65" xmlns:fx="http://javafx.com/fxml/1" fx:controller="de.perdoctus.ebikeconnect.gui.MainWindowController">
+    <top>
+        <MenuBar BorderPane.alignment="CENTER">
+            <menus>
+                <Menu mnemonicParsing="false" text="%file">
+                    <items>
+                        <MenuItem mnemonicParsing="false" onAction="#exitApplication" text="%exit"/>
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="%route">
+                    <items>
+                        <MenuItem fx:id="mnuItemExportGPX" mnemonicParsing="false" onAction="#exportCurrentActivityAsGPX" text="%export-to-gpx"/>
+                    </items>
+                </Menu>
+                <Menu mnemonicParsing="false" text="Help">
+                    <items>
+                        <MenuItem mnemonicParsing="false" onAction="#showAbout" text="About"/>
+                        <MenuItem mnemonicParsing="false" onAction="#openGithubUrl" text="%visit-on-github"/>
+                    </items>
+                </Menu>
+            </menus>
+        </MenuBar>
+    </top>
+    <center>
+        <TabPane fx:id="tabPane" prefHeight="200.0" prefWidth="200.0" tabClosingPolicy="UNAVAILABLE" BorderPane.alignment="CENTER"/>
+    </center>
+</BorderPane>
