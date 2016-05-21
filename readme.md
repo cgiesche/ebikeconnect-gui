@@ -24,6 +24,12 @@ Current features
 Installation
 ------------
 
-Binary releases can be found here: https://github.com/cgiesche/ebikeconnect-gui/releases
+Binary releases can be found here: https://github.com/cgiesche/ebikeconnect-gui/releases/latest
 
-Detailed installation instructions may follow :)
+There are currently two versions:
+
+**ebikeconnect-gui-VERSION.zip**
+A version that needs at least Java Runtime 1.8u77 correctly installed on your System. Extract zip file and run "ebikeconnect-gui-VERSION-jfx.jar".
+ 
+**ebikeconnect-gui-standalone-win64-VERSION.zip**
+A version that brings it's own Java Runtime - but only for Windows (64 Bit) operating systems. Extract zip file and run "ebikeconnect-gui.exe".
