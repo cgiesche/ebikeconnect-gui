@@ -1,7 +1,7 @@
 NyonExplorer - An alternative frontend for Bosch Nyon owners.
 =============================================================
 
-NyonExplorer is an alternative frontend for Bosch Nyon owners. It uses raw data from https://www.ebike-connect.com. The application is not yet nearly featur complete - please feel free to request features.
+NyonExplorer is an alternative frontend for Bosch Nyon owners. It uses raw data from https://www.ebike-connect.com. The application is not yet nearly feature complete - please feel free to request features.
 
 Current features
 ----------------
