@@ -1,6 +1,10 @@
-**NyonExplorer - An alternative frontend for Bosch Nyon owners.**
+NyonExplorer - An alternative frontend for Bosch Nyon owners.
+=============================================================
 
 NyonExplorer is an alternative frontend for Bosch Nyon owners. It uses raw data from https://www.ebike-connect.com. The application is not yet nearly featur complete - please feel free to request features.
+
+Current features
+----------------
 
    + Overview about all recorded activities
    + View activity track on map
@@ -17,7 +21,8 @@ NyonExplorer is an alternative frontend for Bosch Nyon owners. It uses raw data 
 
 ![Screenshot](docs/screenshot.png "Screenshot")
 
-**Installation**
+Installation
+------------
 
 Binary releases can be found here: https://github.com/cgiesche/ebikeconnect-gui/releases
 
