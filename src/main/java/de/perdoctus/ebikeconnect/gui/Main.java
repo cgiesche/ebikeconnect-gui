@@ -37,15 +37,18 @@ import javafx.scene.image.Image;
 import javafx.stage.Stage;
 
 import javax.inject.Inject;
+import java.util.ResourceBundle;
 import java.util.logging.LogManager;
 
 public class Main extends FxWeldApplication {
 
     private final FXMLLoader fxmlLoader;
+    private final ResourceBundle rb;
 
     @Inject
-    public Main(@Bundle("bundles/General") FXMLLoader fxmlLoader) {
+    public Main(@Bundle("bundles/General") FXMLLoader fxmlLoader, @Bundle("bundles/General") ResourceBundle rb) {
         this.fxmlLoader = fxmlLoader;
+        this.rb = rb;
     }
 
     @Override
@@ -60,6 +63,7 @@ public class Main extends FxWeldApplication {
         final Scene scene = new Scene(mainWindow);
         stage.setScene(scene);
         stage.sizeToScene();
+        stage.setTitle(rb.getString("application-name") + " (" + rb.getString("app-version") + ')');
         stage.show();
     }
 
