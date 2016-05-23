@@ -131,11 +131,11 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>/src/main/xsd/gpx.xsd</source>
-                                <source>/src/main/xsd/TrackPointExtensionv1.xsd</source>
+                                <source>src/main/xsd/gpx.xsd</source>
+                                <source>src/main/xsd/TrackPointExtensionv1.xsd</source>
                             </sources>
                             <xjbSources>
-                                <xjbSource>/src/main/bindings</xjbSource>
+                                <xjbSource>src/main/bindings</xjbSource>
                             </xjbSources>
                             <encoding>UTF-8</encoding>
                             <packageName>de.perdoctus.gpx</packageName>
