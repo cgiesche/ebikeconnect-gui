@@ -28,26 +28,30 @@ package de.perdoctus.ebikeconnect.gui.components.table;
 
 
 import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
-import de.perdoctus.ebikeconnect.gui.util.DurationFormatter;
 import javafx.scene.control.TableCell;
 
-import java.time.Duration;
+import java.text.NumberFormat;
 
-public class NumberCellFactory extends TableCell<ActivityDayHeader, Duration> {
+public class NumberCellFactory extends TableCell<ActivityDayHeader, Number> {
 
+    private final int fractionDigits;
     private final String unit;
 
-    public NumberCellFactory(final String unit) {
+    public NumberCellFactory(final int fractionDigits, final String unit) {
+        this.fractionDigits = fractionDigits;
         this.unit = unit;
     }
 
     @Override
-    protected void updateItem(Duration item, boolean empty) {
+    protected void updateItem(Number item, boolean empty) {
         super.updateItem(item, empty);
         if (empty || item == null) {
             setText(null);
         } else {
-            setText(DurationFormatter.formatHhMmSs(item) + unit);
+            final NumberFormat numberFormat = NumberFormat.getInstance();
+            numberFormat.setMaximumFractionDigits(fractionDigits);
+            numberFormat.setMinimumFractionDigits(fractionDigits);
+            setText(numberFormat.format(item) + " " + unit);
         }
     }
 }

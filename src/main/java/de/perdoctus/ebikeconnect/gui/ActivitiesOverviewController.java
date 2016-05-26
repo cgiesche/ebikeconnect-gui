@@ -150,7 +150,7 @@ public class ActivitiesOverviewController {
         tcDate.setCellFactory(param -> new LocalDateCellFactory());
 
         tcDistance.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDistance() / 1000));
-        tcDuration.setCellFactory(param -> new NumberCellFactory("km"));
+        tcDistance.setCellFactory(param -> new NumberCellFactory(2, "km"));
 
         tcDuration.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDrivingTime()));
         tcDuration.setCellFactory(param -> new DurationCellFactory());
