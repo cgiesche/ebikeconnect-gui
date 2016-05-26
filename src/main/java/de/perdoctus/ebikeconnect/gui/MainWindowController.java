@@ -104,7 +104,7 @@ public class MainWindowController {
             }
         });
 
-        mnuItemExportGPX.disableProperty().bind(activitiesOverviewController.currentActivityDetailsProperty().isNull());
+        mnuItemExportGPX.disableProperty().bind(activitiesOverviewController.currentActivityDayProperty().isNull());
     }
 
     private void initUserTab() {

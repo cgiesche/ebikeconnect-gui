@@ -28,8 +28,8 @@ package de.perdoctus.ebikeconnect.gui.services;
 
 
 import de.perdoctus.ebikeconnect.EbikeConnectService;
-import de.perdoctus.ebikeconnect.gui.models.ActivityHeader;
-import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderFactory;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeadersFactory;
 import de.perdoctus.fx.Bundle;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -37,31 +37,25 @@ import javafx.concurrent.Task;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
 
-public class ActivityHeadersService extends Service<List<ActivityHeader>> {
-
-    private static final String TYPE_BIKE_RIDE = "BIKE_RIDE";
+public class ActivityDaysHeaderService extends Service<List<ActivityDayHeader>> {
 
     private final EbikeConnectService ebikeConnectService;
     private final ResourceBundle rb;
 
     @Inject
-    public ActivityHeadersService(final EbikeConnectService ebikeConnectService, @Bundle("bundles/General") final ResourceBundle rb) {
+    public ActivityDaysHeaderService(final EbikeConnectService ebikeConnectService, @Bundle("bundles/General") final ResourceBundle rb) {
         this.ebikeConnectService = ebikeConnectService;
         this.rb = rb;
     }
 
     @Override
-    protected Task<List<ActivityHeader>> createTask() {
-        return new Task<List<ActivityHeader>>() {
+    protected Task<List<ActivityDayHeader>> createTask() {
+        return new Task<List<ActivityDayHeader>>() {
             @Override
-            protected List<ActivityHeader> call() throws Exception {
+            protected List<ActivityDayHeader> call() throws Exception {
                 updateMessage(rb.getString("loading-activity-headers"));
-                return ebikeConnectService.getAllActivityHeaders().getActivityList().stream()
-                        .filter(header -> header.getType().equalsIgnoreCase(TYPE_BIKE_RIDE))
-                        .map(ActivityHeaderFactory::createFrom)
-                        .collect(Collectors.toList());
+                return ActivityDayHeadersFactory.createFrom(ebikeConnectService.getAllActivityHeaders().getActivityList());
             }
         };
     }

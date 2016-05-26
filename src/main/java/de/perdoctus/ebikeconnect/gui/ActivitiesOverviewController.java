@@ -29,19 +29,22 @@ package de.perdoctus.ebikeconnect.gui;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.perdoctus.ebikeconnect.gui.components.table.DurationCellFactory;
+import de.perdoctus.ebikeconnect.gui.components.table.LocalDateCellFactory;
+import de.perdoctus.ebikeconnect.gui.components.table.NumberCellFactory;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDay;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetails;
-import de.perdoctus.ebikeconnect.gui.models.ActivityHeader;
 import de.perdoctus.ebikeconnect.gui.models.Coordinate;
 import de.perdoctus.ebikeconnect.gui.models.json.LatLng;
-import de.perdoctus.ebikeconnect.gui.services.ActivityDetailsService;
-import de.perdoctus.ebikeconnect.gui.services.ActivityHeadersService;
+import de.perdoctus.ebikeconnect.gui.services.ActivityDayService;
+import de.perdoctus.ebikeconnect.gui.services.ActivityDaysHeaderService;
 import de.perdoctus.ebikeconnect.gui.services.GpxExportService;
 import de.perdoctus.ebikeconnect.gui.util.DurationFormatter;
 import de.perdoctus.fx.Bundle;
 import de.perdoctus.fx.ToggleableSeriesChart;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
-import javafx.beans.property.SimpleStringProperty;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
@@ -62,41 +65,38 @@ import org.slf4j.Logger;
 import javax.inject.Inject;
 import java.io.File;
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
+import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ResourceBundle;
-import java.util.stream.Collectors;
+
+import static java.util.stream.Collectors.toList;
 
 public class ActivitiesOverviewController {
 
     @Inject
     private Logger logger;
     @Inject
-    private ActivityHeadersService activityHeadersService;
+    private ActivityDaysHeaderService activityDaysHeaderService;
     @Inject
-    private ActivityDetailsService activityDetailsService;
+    private ActivityDayService activityDayService;
     @Inject
     private GpxExportService gpxExportService;
-    @Inject
-    private ObjectMapper objectMapper;
     @Inject
     @Bundle("bundles/General")
     private ResourceBundle rb;
 
     // ActivitiesTable
     @FXML
-    private TableView<ActivityHeader> activitiesTable;
+    private TableView<ActivityDayHeader> activitiesTable;
     @FXML
-    private TableColumn<ActivityHeader, ImageView> tcType;
+    private TableColumn<ActivityDayHeader, ImageView> tcType;
     @FXML
-    private TableColumn<ActivityHeader, String> tcDistance;
+    private TableColumn<ActivityDayHeader, Number> tcDistance;
     @FXML
-    private TableColumn<ActivityHeader, String> tcDate;
-
+    private TableColumn<ActivityDayHeader, LocalDate> tcDate;
     @FXML
-    private TableColumn<ActivityHeader, String> tcDuration;
+    private TableColumn<ActivityDayHeader, Duration> tcDuration;
 
     // Webview
     @FXML
@@ -112,7 +112,7 @@ public class ActivitiesOverviewController {
 
 
     // Properties
-    private ObjectProperty<ActivityDetails> currentActivityDetails = new SimpleObjectProperty<>();
+    private ObjectProperty<ActivityDay> currentActivityDay = new SimpleObjectProperty<>();
 
     @FXML
     public void initialize() {
@@ -120,19 +120,19 @@ public class ActivitiesOverviewController {
         webView.getEngine().load(getClass().getResource("/html/map.html").toExternalForm());
 
         // Activity Headers
-        activityHeadersService.setOnSucceeded(event -> {
-            activitiesTable.setItems(FXCollections.observableArrayList(activityHeadersService.getValue()));
+        activityDaysHeaderService.setOnSucceeded(event -> {
+            activitiesTable.setItems(FXCollections.observableArrayList(activityDaysHeaderService.getValue()));
         });
-        activityHeadersService.setOnFailed(event -> logger.error("Failed to obtain ActivityList!", activityHeadersService.getException()));
-        final ProgressDialog activityHeadersProgressDialog = new ProgressDialog(activityHeadersService);
+        activityDaysHeaderService.setOnFailed(event -> logger.error("Failed to obtain ActivityList!", activityDaysHeaderService.getException()));
+        final ProgressDialog activityHeadersProgressDialog = new ProgressDialog(activityDaysHeaderService);
         activityHeadersProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Activity Details
-        activityDetailsService.setOnSucceeded(event -> {
-            this.currentActivityDetails.setValue(activityDetailsService.getValue());
+        activityDayService.setOnSucceeded(event -> {
+            this.currentActivityDay.setValue(activityDayService.getValue());
         });
-        activityDetailsService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityHeadersService.getException()));
-        final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDetailsService);
+        activityDayService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
+        final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDayService);
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Gpx Export
@@ -143,16 +143,22 @@ public class ActivitiesOverviewController {
             handleError("Failed to generate GPX File", gpxExportService.getException());
         });
 
-        // -- ActivityList
+        // ActivityTable
         tcType.setCellValueFactory(param -> new SimpleObjectProperty<>(new ImageView(new Image(getClass().getResource("/images/" + param.getValue().getActivityType().name() + ".png").toExternalForm()))));
-        tcDate.setCellValueFactory(param -> new SimpleStringProperty(param.getValue().getStartTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.SHORT))));
-        tcDistance.setCellValueFactory(param -> new SimpleStringProperty(Math.floor(param.getValue().getDistance() / 1000) + "km"));
-        tcDuration.setCellValueFactory(param -> new SimpleStringProperty(DurationFormatter.formatHhMmSs(param.getValue().getDrivingTime())));
+
+        tcDate.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDate()));
+        tcDate.setCellFactory(param -> new LocalDateCellFactory());
+
+        tcDistance.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDistance() / 1000));
+        tcDuration.setCellFactory(param -> new NumberCellFactory("km"));
+
+        tcDuration.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDrivingTime()));
+        tcDuration.setCellFactory(param -> new DurationCellFactory());
 
         activitiesTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
         activitiesTable.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
-                final MultipleSelectionModel<ActivityHeader> selectionModel = activitiesTable.getSelectionModel();
+                final MultipleSelectionModel<ActivityDayHeader> selectionModel = activitiesTable.getSelectionModel();
                 if (!selectionModel.isEmpty()) {
                     loadActivityDetails(selectionModel.getSelectedItem());
                 }
@@ -181,15 +187,15 @@ public class ActivitiesOverviewController {
         });
 
         // -- Current ActivityDetails
-        this.currentActivityDetails.addListener((observable, oldValue, newValue) -> {
+        this.currentActivityDay.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                activityDetailsChanged(newValue);
+                activityDayChanged(newValue);
             }
         });
     }
 
     private void handleError(final String message, final Throwable exception) {
-        logger.error("Failed to generate GPX file!", exception);
+        logger.error(exception.getMessage(), exception);
         final Alert alert = new Alert(Alert.AlertType.ERROR, exception.getMessage(), ButtonType.OK);
         alert.setTitle(message);
         alert.setHeaderText(rb.getString("error-header"));
@@ -203,23 +209,21 @@ public class ActivitiesOverviewController {
         info.show();
     }
 
-    private void activityDetailsChanged(final ActivityDetails activityDetails) {
-        final List<Float> speeds = activityDetails.getSpeeds();
-        final double timePerPoint = (activityDetails.getActivityHeader().getDrivingTime().getSeconds() / (double) speeds.size());
-        logger.info("Time per Point:" + timePerPoint);
-        refreshChart(activityDetails);
-
-        refreshMap();
-
+    private void activityDayChanged(final ActivityDay activityDay) {
+        refreshChart(activityDay);
+        refreshMap(activityDay);
     }
 
     private void refreshStats() {
 
     }
 
-    private void refreshMap() {
-        final List<Coordinate> trackPoints = getCurrentActivityDetails().getTrackPoints();
-        final List<LatLng> latLngs = trackPoints.stream().filter(Coordinate::isValid).map(LatLng::new).collect(Collectors.toList());
+    private void refreshMap(final ActivityDay activityDay) {
+        final List<ActivityDetails> activityDaySegments = activityDay.getActivitySegments();
+
+        final ObjectMapper objectMapper = new ObjectMapper();
+        final List<Coordinate> trackPoints = activityDaySegments.stream().flatMap(activityDetails -> activityDetails.getTrackPoints().stream()).collect(toList());
+        final List<LatLng> latLngs = trackPoints.stream().filter(Coordinate::isValid).map(LatLng::new).collect(toList());
         final WebEngine webEngine = webView.getEngine();
 
         try {
@@ -242,68 +246,70 @@ public class ActivitiesOverviewController {
 
     }
 
-    private void refreshChart(final ActivityDetails activityDetails) {
-        final double drivingTime = activityDetails.getActivityHeader().getDrivingTime().getSeconds();
+    private void refreshChart(final ActivityDay activityDay) {
+        final List<ActivityDetails> activityDaySegments = activityDay.getActivitySegments();
 
         chart.getData().clear();
-        addChartSeries(rb.getString("altitude"), drivingTime, activityDetails.getAltitudes());
-        addChartSeries(rb.getString("speed"), drivingTime, activityDetails.getSpeeds());
-        addChartSeries(rb.getString("heart-rate"), drivingTime, activityDetails.getHeartRate());
-        addChartSeries(rb.getString("cadence"), drivingTime, activityDetails.getCadences());
-        addChartSeries(rb.getString("driver-torque"), drivingTime, activityDetails.getDriverTorques());
-        addChartSeries(rb.getString("motor-torque"), drivingTime, activityDetails.getMotorTorques());
-        addChartSeries(rb.getString("motor-revolutions"), drivingTime, activityDetails.getMotorRevolutionRates());
-        addChartSeries(rb.getString("energy-economy"), drivingTime, activityDetails.getEnergyEconomies());
-
-        chartRangeSlider.setMax(Math.round(drivingTime + 0.5));
+        addChartSeries(rb.getString("altitude"), activityDaySegments.stream().flatMap(ad -> ad.getAltitudes().stream()).collect(toList()));
+        addChartSeries(rb.getString("speed"), activityDaySegments.stream().flatMap(ad -> ad.getSpeeds().stream()).collect(toList()));
+        addChartSeries(rb.getString("heart-rate"), activityDaySegments.stream().flatMap(ad -> ad.getHeartRate().stream()).collect(toList()));
+        addChartSeries(rb.getString("cadence"), activityDaySegments.stream().flatMap(ad -> ad.getCadences().stream()).collect(toList()));
+        addChartSeries(rb.getString("driver-torque"), activityDaySegments.stream().flatMap(ad -> ad.getDriverTorques().stream()).collect(toList()));
+        addChartSeries(rb.getString("motor-torque"), activityDaySegments.stream().flatMap(ad -> ad.getMotorTorques().stream()).collect(toList()));
+        addChartSeries(rb.getString("motor-revolutions"), activityDaySegments.stream().flatMap(ad -> ad.getMotorRevolutionRates().stream()).collect(toList()));
+        addChartSeries(rb.getString("energy-economy"), activityDaySegments.stream().flatMap(ad -> ad.getEnergyEconomies().stream()).collect(toList()));
         chartRangeSlider.setLowValue(0);
         chartRangeSlider.setHighValue(chartRangeSlider.getMax());
     }
 
-    private void addChartSeries(String title, double drivingTime, List<? extends Number> values) {
-        final double timePerPoint = drivingTime / values.size();
+    private void addChartSeries(final String title, final List<? extends Number> samples) {
+        logger.info(title + ": " + samples.size() + " samples.");
+
         final XYChart.Series<Number, Number> series = new XYChart.Series<>();
         series.setName(title);
 
         final ObservableList<XYChart.Data<Number, Number>> data = series.getData();
-        for (int i = 0; i < values.size(); i += 4) {
-            final Number number = values.get(i);
+
+        for (int i = 0; i < samples.size(); i += 4) {
+            final Number number = samples.get(i);
             if (number != null) {
-                final XYChart.Data<Number, Number> dataPoint = new XYChart.Data<>(i * timePerPoint, number);
+                final XYChart.Data<Number, Number> dataPoint = new XYChart.Data<>(i, number);
                 data.add(dataPoint);
             }
         }
+
+        chartRangeSlider.setMax(samples.size());
 
         if (data.size() > 0) {
             chart.getData().add(series);
         }
     }
 
-    private void loadActivityDetails(final ActivityHeader selectedItem) {
-        if (!activityDetailsService.isRunning()) {
-            activityDetailsService.reset();
-            activityDetailsService.setActivityId(selectedItem.getActivityId());
-            activityDetailsService.start();
+    private void loadActivityDetails(final ActivityDayHeader selectedItem) {
+        if (!activityDayService.isRunning()) {
+            activityDayService.reset();
+            activityDayService.setActivityIds(selectedItem.getActivityIds());
+            activityDayService.start();
         }
     }
 
     public void reloadHeaders() {
         logger.info("Reloading Headers!");
-        if (!activityHeadersService.isRunning()) {
-            activityHeadersService.restart();
+        if (!activityDaysHeaderService.isRunning()) {
+            activityDaysHeaderService.restart();
         }
     }
 
-    public ActivityDetails getCurrentActivityDetails() {
-        return currentActivityDetails.get();
+    public ActivityDay getCurrentActivityDay() {
+        return currentActivityDay.get();
     }
 
-    public ObjectProperty<ActivityDetails> currentActivityDetailsProperty() {
-        return currentActivityDetails;
+    public ObjectProperty<ActivityDay> currentActivityDayProperty() {
+        return currentActivityDay;
     }
 
-    public void setCurrentActivityDetails(ActivityDetails currentActivityDetails) {
-        this.currentActivityDetails.set(currentActivityDetails);
+    public void setCurrentActivityDay(ActivityDay currentActivityDay) {
+        this.currentActivityDay.set(currentActivityDay);
     }
 
     public void exportSelectedActivity() {
@@ -313,9 +319,10 @@ public class ActivitiesOverviewController {
         final File file = fileChooser.showSaveDialog(chart.getScene().getWindow());
 
         if (file != null) {
-            gpxExportService.setActivityDetailsProperty(this.currentActivityDetails.get());
+            gpxExportService.setActivityDetailsProperty(this.currentActivityDay.get().getActivitySegments());
             gpxExportService.setFileProperty(file);
             gpxExportService.restart();
         }
     }
+
 }

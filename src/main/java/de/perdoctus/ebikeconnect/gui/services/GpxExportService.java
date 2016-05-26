@@ -28,7 +28,6 @@ package de.perdoctus.ebikeconnect.gui.services;
 
 
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetails;
-import de.perdoctus.ebikeconnect.gui.models.ActivityHeader;
 import de.perdoctus.ebikeconnect.gui.models.Coordinate;
 import de.perdoctus.ebikeconnect.jaxb.GpxPrefixMapper;
 import de.perdoctus.fx.Bundle;
@@ -59,7 +58,9 @@ public class GpxExportService extends Service<Void> {
     @Bundle("bundles/General")
     private ResourceBundle rb;
 
-    private ObjectProperty<ActivityDetails> activityDetailsProperty = new SimpleObjectProperty<>();
+    private final static ObjectFactory OBJECT_FACTORY = new ObjectFactory();
+
+    private ObjectProperty<List<ActivityDetails>> activityDetailsProperty = new SimpleObjectProperty<>();
     private ObjectProperty<File> fileProperty = new SimpleObjectProperty<>();
 
     @Override
@@ -76,14 +77,30 @@ public class GpxExportService extends Service<Void> {
                 return null;
             }
 
-            private JAXBElement<GpxType> createGpxDocument(final ActivityDetails activityDetails) {
-                final ObjectFactory objectFactory = new ObjectFactory();
+            private JAXBElement<GpxType> createGpxDocument(final List<ActivityDetails> activityDetailsList) {
 
+                final TrkType track = new TrkType();
+
+                for (ActivityDetails activityDetails : activityDetailsList) {
+                    final TrksegType trackSegment = createTrackSegment(activityDetails);
+                    track.getTrkseg().add(trackSegment);
+                }
+
+                final MetadataType metadata = createMetadata(activityDetailsList);
+
+                final GpxType gpxType = new GpxType();
+                gpxType.setVersion("1.1");
+                gpxType.setCreator(rb.getString("application-name"));
+                gpxType.setMetadata(metadata);
+                gpxType.getTrk().add(track);
+
+                return OBJECT_FACTORY.createGpx(gpxType);
+            }
+
+            private TrksegType createTrackSegment(final ActivityDetails activityDetails) {
                 final List<Coordinate> trackPoints = activityDetails.getTrackPoints();
                 int trackpointCount = trackPoints.size();
 
-                long drivingTimeMillis = activityDetails.getActivityHeader().getDrivingTime().toMillis();
-                long trackPointMilis = drivingTimeMillis / trackpointCount;
                 final LocalDateTime startTime = activityDetails.getActivityHeader().getStartTime();
 
                 final TrksegType trackSegment = new TrksegType();
@@ -96,9 +113,9 @@ public class GpxExportService extends Service<Void> {
                         pointExtensionT.setHr(getValueMatchingTrackpoint(trackPointNr, trackpointCount, activityDetails.getHeartRate()));
 
                         final ExtensionsType extensionsType = new ExtensionsType();
-                        extensionsType.getAny().add(objectFactory.createTrackPointExtension(pointExtensionT));
+                        extensionsType.getAny().add(OBJECT_FACTORY.createTrackPointExtension(pointExtensionT));
 
-                        final LocalDateTime trackpointTime = startTime.plus(trackPointMilis * trackPointNr, ChronoUnit.MILLIS);
+                        final LocalDateTime trackpointTime = startTime.plus(trackPointNr, ChronoUnit.SECONDS);
 
                         final WptType trackpoint = new WptType();
                         trackpoint.setLat(BigDecimal.valueOf(coordinate.getLat()));
@@ -110,18 +127,7 @@ public class GpxExportService extends Service<Void> {
                         trackSegment.getTrkpt().add(trackpoint);
                     }
                 }
-                final TrkType track = new TrkType();
-                track.getTrkseg().add(trackSegment);
-
-                final MetadataType metadata = createMetadata(activityDetails.getActivityHeader());
-
-                final GpxType gpxType = new GpxType();
-                gpxType.setVersion("1.1");
-                gpxType.setCreator(rb.getString("application-name"));
-                gpxType.setMetadata(metadata);
-                gpxType.getTrk().add(track);
-
-                return objectFactory.createGpx(gpxType);
+                return trackSegment;
             }
 
             private void saveGpxDocument(final JAXBElement<GpxType> gpxDocument) throws JAXBException {
@@ -136,12 +142,16 @@ public class GpxExportService extends Service<Void> {
                 marshaller.marshal(gpxDocument, fileProperty.get());
             }
 
-            private MetadataType createMetadata(ActivityHeader activityHeader) {
+            private MetadataType createMetadata(List<ActivityDetails> activityDetailsList) {
                 final MetadataType metadata = new MetadataType();
-                metadata.setName(rb.getString("aktivity") + " " + activityHeader.getStartTime().format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)));
-                metadata.setDesc(rb.getString("aktivity") + ": " + activityHeader.getStartTime().format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)) +
-                        " - " + activityHeader.getEndTime().format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
-                metadata.setTime(activityHeader.getStartTime());
+
+                final LocalDateTime startTime = activityDetailsList.stream().map(activityDetails -> activityDetails.getActivityHeader().getStartTime()).min((o1, o2) -> o1.isAfter(o2) ? 1 : 0).get();
+                final LocalDateTime endTime = activityDetailsList.stream().map(activityDetails -> activityDetails.getActivityHeader().getEndTime()).max((o1, o2) -> o1.isAfter(o2) ? 1 : 0).get();
+
+                metadata.setName(rb.getString("aktivity") + " " + startTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)));
+                metadata.setDesc(rb.getString("aktivity") + ": " + startTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)) +
+                        " - " + endTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
+                metadata.setTime(startTime);
                 return metadata;
             }
 
@@ -159,15 +169,15 @@ public class GpxExportService extends Service<Void> {
         };
     }
 
-    public ActivityDetails getActivityDetailsProperty() {
+    public List<ActivityDetails> getActivityDetailsProperty() {
         return activityDetailsProperty.get();
     }
 
-    public ObjectProperty<ActivityDetails> activityDetailsPropertyProperty() {
+    public ObjectProperty<List<ActivityDetails>> activityDetailsPropertyProperty() {
         return activityDetailsProperty;
     }
 
-    public void setActivityDetailsProperty(ActivityDetails activityDetailsProperty) {
+    public void setActivityDetailsProperty(List<ActivityDetails> activityDetailsProperty) {
         this.activityDetailsProperty.set(activityDetailsProperty);
     }
 

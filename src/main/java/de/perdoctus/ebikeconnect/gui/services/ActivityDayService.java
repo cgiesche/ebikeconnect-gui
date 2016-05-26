@@ -32,57 +32,73 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import de.perdoctus.ebikeconnect.EbikeConnectService;
 import de.perdoctus.ebikeconnect.UnauthenticatedException;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDay;
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetails;
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetailsFactory;
 import de.perdoctus.fx.Bundle;
-import javafx.beans.property.LongProperty;
-import javafx.beans.property.SimpleLongProperty;
+import javafx.beans.property.ObjectProperty;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
 import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.ResourceBundle;
 
-public class ActivityDetailsService extends Service<ActivityDetails> {
+public class ActivityDayService extends Service<ActivityDay> {
 
     private final Logger log;
     private final LoadingCache<Long, ActivityDetails> detailsResponseCache;
     private final ResourceBundle rb;
-    private LongProperty activityId = new SimpleLongProperty();
+    private ObjectProperty<Collection<Long>> activityIds = new SimpleObjectProperty<>();
 
     @Inject
-    public ActivityDetailsService(@Bundle("bundles/General") final ResourceBundle rb, final PersistentActivityDetailsCacheLoader cacheLoader, final Logger log) {
+    public ActivityDayService(@Bundle("bundles/General") final ResourceBundle rb, final PersistentActivityDetailsCacheLoader cacheLoader, final Logger log) {
         this.rb = rb;
         this.log = log;
         detailsResponseCache = CacheBuilder.newBuilder().maximumSize(40).recordStats().build(cacheLoader);
     }
 
     @Override
-    protected Task<ActivityDetails> createTask() {
-        return new Task<ActivityDetails>() {
+    protected Task<ActivityDay> createTask() {
+        return new Task<ActivityDay>() {
             @Override
-            protected ActivityDetails call() throws Exception {
+            protected ActivityDay call() throws Exception {
+                final Collection<Long> startTimes = activityIds.get();
+                final int activitySegmentsCount = startTimes.size();
+
+                final List<ActivityDetails> activityDaySegments = new ArrayList<>(activitySegmentsCount);
+
+                int progress = 0;
                 updateMessage(rb.getString("loading-activity-details"));
-                long startTime = ActivityDetailsService.this.activityId.get();
-                final ActivityDetails activityDetails = detailsResponseCache.get(startTime);
+                updateProgress(progress, activitySegmentsCount);
+
+                for (final Long startTime : startTimes) {
+                    final ActivityDetails activityDetails = detailsResponseCache.get(startTime);
+                    activityDaySegments.add(activityDetails);
+                    updateProgress(++progress, activitySegmentsCount);
+                }
+
                 log.info(detailsResponseCache.stats().toString());
-                return activityDetails;
+                return new ActivityDay(activityDaySegments);
             }
         };
     }
 
-    public long getActivityId() {
-        return activityId.get();
+    public Collection<Long> getActivityIds() {
+        return activityIds.get();
     }
 
-    public LongProperty activityIdProperty() {
-        return activityId;
+    public ObjectProperty<Collection<Long>> activityIdsProperty() {
+        return activityIds;
     }
 
-    public void setActivityId(long activityId) {
-        this.activityId.set(activityId);
+    public void setActivityIds(final Collection<Long> activityId) {
+        this.activityIds.set(activityId);
     }
 
     public static class PersistentActivityDetailsCacheLoader extends CacheLoader<Long, ActivityDetails> {
