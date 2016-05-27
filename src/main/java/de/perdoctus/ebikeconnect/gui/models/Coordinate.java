@@ -34,12 +34,12 @@ import java.io.Serializable;
 public class Coordinate implements Serializable {
 
     private static final long serialVersionUID = 1L;
+    private static final double EARTH_RADIUS = 6371.0;
 
     private final double lat;
     private final double lng;
 
     private static final Coordinate INVALID_COORDINATE = new Coordinate(0, 0) {
-
         private static final long serialVersionUID = 1L;
 
         @Override
@@ -75,6 +75,25 @@ public class Coordinate implements Serializable {
 
     public boolean isValid() {
         return true;
+    }
+
+    /**
+     * @return the distance (in km) to the given other coordinate.
+     */
+    public double distanceTo(final Coordinate other) {
+        double lat1 = getLat();
+        double lng1 = getLng();
+        double lat2 = other.getLat();
+        double lng2 = other.getLng();
+
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLng = Math.toRadians(lng2 - lng1);
+        double sindLat = Math.sin(dLat / 2);
+        double sindLng = Math.sin(dLng / 2);
+        double a = Math.pow(sindLat, 2) + Math.pow(sindLng, 2) * Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2));
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return EARTH_RADIUS * c;
     }
 
 }
