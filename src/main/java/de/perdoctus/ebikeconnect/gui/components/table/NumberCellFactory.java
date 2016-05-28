@@ -27,12 +27,12 @@ package de.perdoctus.ebikeconnect.gui.components.table;
  */
 
 
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
+import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderGroup;
 import javafx.scene.control.TableCell;
 
 import java.text.NumberFormat;
 
-public class NumberCellFactory extends TableCell<ActivityDayHeader, Number> {
+public class NumberCellFactory extends TableCell<ActivityHeaderGroup, Number> {
 
     private final int fractionDigits;
     private final String unit;

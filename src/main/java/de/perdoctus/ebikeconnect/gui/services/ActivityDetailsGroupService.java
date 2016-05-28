@@ -32,9 +32,9 @@ import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import de.perdoctus.ebikeconnect.EbikeConnectService;
 import de.perdoctus.ebikeconnect.UnauthenticatedException;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDay;
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetails;
 import de.perdoctus.ebikeconnect.gui.models.ActivityDetailsFactory;
+import de.perdoctus.ebikeconnect.gui.models.ActivityDetailsGroup;
 import de.perdoctus.fx.Bundle;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
@@ -49,25 +49,25 @@ import java.util.Collection;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class ActivityDayService extends Service<ActivityDay> {
+public class ActivityDetailsGroupService extends Service<ActivityDetailsGroup> {
 
     private final Logger log;
     private final LoadingCache<Long, ActivityDetails> detailsResponseCache;
     private final ResourceBundle rb;
-    private ObjectProperty<Collection<Long>> activityIds = new SimpleObjectProperty<>();
+    private ObjectProperty<List<Long>> activityIds = new SimpleObjectProperty<>();
 
     @Inject
-    public ActivityDayService(@Bundle("bundles/General") final ResourceBundle rb, final PersistentActivityDetailsCacheLoader cacheLoader, final Logger log) {
+    public ActivityDetailsGroupService(@Bundle("bundles/General") final ResourceBundle rb, final PersistentActivityDetailsCacheLoader cacheLoader, final Logger log) {
         this.rb = rb;
         this.log = log;
         detailsResponseCache = CacheBuilder.newBuilder().maximumSize(40).recordStats().build(cacheLoader);
     }
 
     @Override
-    protected Task<ActivityDay> createTask() {
-        return new Task<ActivityDay>() {
+    protected Task<ActivityDetailsGroup> createTask() {
+        return new Task<ActivityDetailsGroup>() {
             @Override
-            protected ActivityDay call() throws Exception {
+            protected ActivityDetailsGroup call() throws Exception {
                 final Collection<Long> startTimes = activityIds.get();
                 final int activitySegmentsCount = startTimes.size();
 
@@ -84,20 +84,20 @@ public class ActivityDayService extends Service<ActivityDay> {
                 }
 
                 log.info(detailsResponseCache.stats().toString());
-                return new ActivityDay(activityDaySegments);
+                return new ActivityDetailsGroup(activityDaySegments);
             }
         };
     }
 
-    public Collection<Long> getActivityIds() {
+    public List<Long> getActivityIds() {
         return activityIds.get();
     }
 
-    public ObjectProperty<Collection<Long>> activityIdsProperty() {
+    public ObjectProperty<List<Long>> activityIdsProperty() {
         return activityIds;
     }
 
-    public void setActivityIds(final Collection<Long> activityId) {
+    public void setActivityIds(final List<Long> activityId) {
         this.activityIds.set(activityId);
     }
 
@@ -133,7 +133,9 @@ public class ActivityDayService extends Service<ActivityDay> {
 
         private ActivityDetails loadPersisted(final File cacheFile) {
             try (final ObjectInputStream objectInputStream = new ObjectInputStream(new FileInputStream(cacheFile))) {
-                return (ActivityDetails) objectInputStream.readObject();
+                final ActivityDetails activityDetails = (ActivityDetails) objectInputStream.readObject();
+                logger.debug("Successfully loaded {} from disk.", activityDetails);
+                return activityDetails;
             } catch (ClassNotFoundException | IOException e) {
                 logger.error("Failed to load persisted ActivityDetails from " + cacheFile.getAbsolutePath() + ". Deleting and reloading.", e);
                 cacheFile.delete();
@@ -145,6 +147,7 @@ public class ActivityDayService extends Service<ActivityDay> {
             final ActivityDetails activityDetails = ActivityDetailsFactory.createFrom(ebikeConnectService.getRawActivity(key));
             try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(cacheFile))) {
                 os.writeObject(activityDetails);
+                logger.debug("Successfully persisted {} to disk.", activityDetails);
             } catch (IOException e) {
                 logger.error("Failed to persist loaded ActivityDetails to " + cacheFile.getAbsolutePath() + ".", e);
             }

@@ -107,4 +107,10 @@ public class ActivityHeader implements Serializable {
     public void setCalories(int calories) {
         this.calories = calories;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityHeader{activityId=" + activityId + '}';
+    }
+
 }

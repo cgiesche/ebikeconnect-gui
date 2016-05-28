@@ -36,15 +36,15 @@ import java.time.ZoneId;
 import java.util.*;
 import java.util.stream.Collectors;
 
-public class ActivityDayHeadersFactory {
+public class ActivityHeaderGroupsFactory {
 
     private static final String TYPE_BIKE_RIDE = "BIKE_RIDE";
 
-    public static List<ActivityDayHeader> createFrom(final Collection<EBCActivityHeader> activityHeaders) {
+    public static List<ActivityHeaderGroup> createFrom(final Collection<EBCActivityHeader> activityHeaders) {
         final List<EBCActivityHeader> bikeActivityHeaders = activityHeaders.stream().filter(header -> header.getType().equalsIgnoreCase(TYPE_BIKE_RIDE)).collect(Collectors.toList());
         final Map<LocalDate, List<EBCActivityHeader>> groupedBikeActivityHeaders = groupByDay(bikeActivityHeaders);
 
-        return groupedBikeActivityHeaders.entrySet().stream().map(localDateListEntry -> ActivityDayHeaderFactory.createFrom(localDateListEntry.getKey(), localDateListEntry.getValue())).collect(Collectors.toList());
+        return groupedBikeActivityHeaders.entrySet().stream().map(localDateListEntry -> ActivityHeaderGroupFactory.createFrom(localDateListEntry.getKey(), localDateListEntry.getValue())).collect(Collectors.toList());
     }
 
     private static Map<LocalDate, List<EBCActivityHeader>> groupByDay(Collection<EBCActivityHeader> activityHeaders) {

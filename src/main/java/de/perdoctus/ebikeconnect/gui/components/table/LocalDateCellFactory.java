@@ -27,14 +27,14 @@ package de.perdoctus.ebikeconnect.gui.components.table;
  */
 
 
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
+import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderGroup;
 import javafx.scene.control.TableCell;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
 
-public class LocalDateCellFactory extends TableCell<ActivityDayHeader, LocalDate> {
+public class LocalDateCellFactory extends TableCell<ActivityHeaderGroup, LocalDate> {
 
     @Override
     protected void updateItem(LocalDate item, boolean empty) {

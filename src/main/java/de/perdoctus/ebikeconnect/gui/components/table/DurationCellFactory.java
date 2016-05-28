@@ -27,13 +27,13 @@ package de.perdoctus.ebikeconnect.gui.components.table;
  */
 
 
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
+import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderGroup;
 import de.perdoctus.ebikeconnect.gui.util.DurationFormatter;
 import javafx.scene.control.TableCell;
 
 import java.time.Duration;
 
-public class DurationCellFactory extends TableCell<ActivityDayHeader, Duration> {
+public class DurationCellFactory extends TableCell<ActivityHeaderGroup, Duration> {
 
     @Override
     protected void updateItem(Duration item, boolean empty) {

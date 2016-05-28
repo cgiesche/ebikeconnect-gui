@@ -33,11 +33,11 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ActivityDayHeaderFactory {
+public class ActivityHeaderGroupFactory {
 
-    public static ActivityDayHeader createFrom(LocalDate activityDate, List<EBCActivityHeader> ebcActivityHeaders) {
+    public static ActivityHeaderGroup createFrom(LocalDate activityDate, List<EBCActivityHeader> ebcActivityHeaders) {
         final List<ActivityHeader> activityHeaders = ebcActivityHeaders.stream().map(ActivityHeaderFactory::createFrom).collect(Collectors.toList());
-        return new ActivityDayHeader(activityDate, activityHeaders);
+        return new ActivityHeaderGroup(activityDate, activityHeaders);
     }
 
 }

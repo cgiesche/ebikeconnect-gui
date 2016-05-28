@@ -29,11 +29,11 @@ package de.perdoctus.ebikeconnect.gui.models;
 
 import java.util.List;
 
-public class ActivityDay {
+public class ActivityDetailsGroup {
 
     private List<ActivityDetails> activitySegments;
 
-    public ActivityDay(List<ActivityDetails> activitySegments) {
+    public ActivityDetailsGroup(List<ActivityDetails> activitySegments) {
         this.activitySegments = activitySegments;
     }
 

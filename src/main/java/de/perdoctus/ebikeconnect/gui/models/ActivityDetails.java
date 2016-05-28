@@ -153,4 +153,9 @@ public class ActivityDetails implements Serializable {
     public void setEnergyEconomies(List<Float> energyEconomies) {
         this.energyEconomies = energyEconomies;
     }
+
+    @Override
+    public String toString() {
+        return "ActivityDetails{activityHeader=" + activityHeader + '}';
+    }
 }

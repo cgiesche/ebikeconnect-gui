@@ -34,12 +34,12 @@ import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ActivityDayHeader {
+public class ActivityHeaderGroup {
 
     private final LocalDate date;
     private final List<ActivityHeader> activityHeaders;
 
-    public ActivityDayHeader(final LocalDate date, final List<ActivityHeader> activityHeaders) {
+    public ActivityHeaderGroup(final LocalDate date, final List<ActivityHeader> activityHeaders) {
         this.date = date;
         this.activityHeaders = activityHeaders;
     }

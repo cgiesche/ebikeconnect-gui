@@ -28,8 +28,8 @@ package de.perdoctus.ebikeconnect.gui.services;
 
 
 import de.perdoctus.ebikeconnect.EbikeConnectService;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeadersFactory;
+import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderGroup;
+import de.perdoctus.ebikeconnect.gui.models.ActivityHeaderGroupsFactory;
 import de.perdoctus.fx.Bundle;
 import javafx.concurrent.Service;
 import javafx.concurrent.Task;
@@ -38,7 +38,7 @@ import javax.inject.Inject;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class ActivityDaysHeaderService extends Service<List<ActivityDayHeader>> {
+public class ActivityDaysHeaderService extends Service<List<ActivityHeaderGroup>> {
 
     private final EbikeConnectService ebikeConnectService;
     private final ResourceBundle rb;
@@ -50,12 +50,12 @@ public class ActivityDaysHeaderService extends Service<List<ActivityDayHeader>> 
     }
 
     @Override
-    protected Task<List<ActivityDayHeader>> createTask() {
-        return new Task<List<ActivityDayHeader>>() {
+    protected Task<List<ActivityHeaderGroup>> createTask() {
+        return new Task<List<ActivityHeaderGroup>>() {
             @Override
-            protected List<ActivityDayHeader> call() throws Exception {
+            protected List<ActivityHeaderGroup> call() throws Exception {
                 updateMessage(rb.getString("loading-activity-headers"));
-                return ActivityDayHeadersFactory.createFrom(ebikeConnectService.getAllActivityHeaders().getActivityList());
+                return ActivityHeaderGroupsFactory.createFrom(ebikeConnectService.getAllActivityHeaders().getActivityList());
             }
         };
     }

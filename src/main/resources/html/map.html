@@ -21,7 +21,17 @@
 <script>
 
     var map;
-    var polyline;
+    var polylines = [];
+    var colorCycler = {
+        colors: ['#01397D', '#3A8FF4', '#B200AA', '#F42AEB', '#551800', '#AA5939'],
+        currentIndex: 0,
+        nextColor: function () {
+            if (this.currentIndex >= this.colors.length) {
+                this.currentIndex = 0;
+            }
+            return this.colors[this.currentIndex++];
+        }
+    };
 
     function initMap() {
         map = new google.maps.Map(document.getElementById('map'), {
@@ -29,17 +39,25 @@
             zoom: 6,
             streetViewControl: false
         });
-
-        polyline = new google.maps.Polyline({
-            strokeColor: '#0000FF',
-            strokeOpacity: 0.8,
-            strokeWeight: 2
-        });
     }
 
-    function drawPolyline(coordinates) {
-        polyline.setPath(coordinates);
-        polyline.setMap(map);
+    function clearPolylines() {
+        polylines.forEach(function (element) {
+            element.setMap(null);
+        });
+        polylines = [];
+    }
+
+    function addTrackSegment(coordinates) {
+        var polyline = new google.maps.Polyline({
+            strokeColor: colorCycler.nextColor(),
+            strokeOpacity: 0.8,
+            strokeWeight: 2,
+            map: map,
+            path: coordinates
+        });
+
+        polylines.push(polyline);
     }
 
 </script>

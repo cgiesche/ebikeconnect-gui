@@ -32,13 +32,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import de.perdoctus.ebikeconnect.gui.components.table.DurationCellFactory;
 import de.perdoctus.ebikeconnect.gui.components.table.LocalDateCellFactory;
 import de.perdoctus.ebikeconnect.gui.components.table.NumberCellFactory;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDay;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDayHeader;
-import de.perdoctus.ebikeconnect.gui.models.ActivityDetails;
-import de.perdoctus.ebikeconnect.gui.models.Coordinate;
+import de.perdoctus.ebikeconnect.gui.models.*;
 import de.perdoctus.ebikeconnect.gui.models.json.LatLng;
-import de.perdoctus.ebikeconnect.gui.services.ActivityDayService;
 import de.perdoctus.ebikeconnect.gui.services.ActivityDaysHeaderService;
+import de.perdoctus.ebikeconnect.gui.services.ActivityDetailsGroupService;
 import de.perdoctus.ebikeconnect.gui.services.GpxExportService;
 import de.perdoctus.ebikeconnect.gui.util.DurationFormatter;
 import de.perdoctus.fx.Bundle;
@@ -46,18 +43,19 @@ import de.perdoctus.fx.ToggleableSeriesChart;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.fxml.FXML;
 import javafx.scene.chart.NumberAxis;
 import javafx.scene.chart.XYChart;
 import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.cell.CheckBoxListCell;
 import javafx.scene.web.WebEngine;
 import javafx.scene.web.WebView;
 import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.util.StringConverter;
+import org.controlsfx.control.CheckListView;
 import org.controlsfx.control.RangeSlider;
 import org.controlsfx.dialog.ProgressDialog;
 import org.slf4j.Logger;
@@ -66,37 +64,44 @@ import javax.inject.Inject;
 import java.io.File;
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.FormatStyle;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ResourceBundle;
+import java.util.stream.Collectors;
 
 import static java.util.stream.Collectors.toList;
 
 public class ActivitiesOverviewController {
-
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM);
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM);
     @Inject
     private Logger logger;
     @Inject
     private ActivityDaysHeaderService activityDaysHeaderService;
     @Inject
-    private ActivityDayService activityDayService;
+    private ActivityDetailsGroupService activityDetailsGroupService;
     @Inject
     private GpxExportService gpxExportService;
     @Inject
     @Bundle("bundles/General")
     private ResourceBundle rb;
 
-    // ActivitiesTable
+    // Activities Overview
     @FXML
-    private TableView<ActivityDayHeader> activitiesTable;
+    private TableView<ActivityHeaderGroup> activitiesTable;
     @FXML
-    private TableColumn<ActivityDayHeader, ImageView> tcType;
+    private TableColumn<ActivityHeaderGroup, Number> tcDistance;
+
     @FXML
-    private TableColumn<ActivityDayHeader, Number> tcDistance;
+    private TableColumn<ActivityHeaderGroup, LocalDate> tcDate;
     @FXML
-    private TableColumn<ActivityDayHeader, LocalDate> tcDate;
+    private TableColumn<ActivityHeaderGroup, Duration> tcDuration;
+
+    // Activity Segments
     @FXML
-    private TableColumn<ActivityDayHeader, Duration> tcDuration;
+    public CheckListView<ActivityHeader> lstSegments;
 
     // Webview
     @FXML
@@ -112,7 +117,7 @@ public class ActivitiesOverviewController {
 
 
     // Properties
-    private ObjectProperty<ActivityDay> currentActivityDay = new SimpleObjectProperty<>();
+    private ObjectProperty<ActivityDetailsGroup> selectedActivityDetails = new SimpleObjectProperty<>();
 
     @FXML
     public void initialize() {
@@ -122,17 +127,17 @@ public class ActivitiesOverviewController {
         // Activity Headers
         activityDaysHeaderService.setOnSucceeded(event -> {
             activitiesTable.setItems(FXCollections.observableArrayList(activityDaysHeaderService.getValue()));
+            activitiesTable.getSortOrder().add(tcDate);
+            tcDate.setSortable(true);
         });
         activityDaysHeaderService.setOnFailed(event -> logger.error("Failed to obtain ActivityList!", activityDaysHeaderService.getException()));
         final ProgressDialog activityHeadersProgressDialog = new ProgressDialog(activityDaysHeaderService);
         activityHeadersProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Activity Details
-        activityDayService.setOnSucceeded(event -> {
-            this.currentActivityDay.setValue(activityDayService.getValue());
-        });
-        activityDayService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
-        final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDayService);
+        activityDetailsGroupService.setOnSucceeded(event -> this.selectedActivityDetails.setValue(activityDetailsGroupService.getValue()));
+        activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
+        final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDetailsGroupService);
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Gpx Export
@@ -144,26 +149,64 @@ public class ActivitiesOverviewController {
         });
 
         // ActivityTable
-        tcType.setCellValueFactory(param -> new SimpleObjectProperty<>(new ImageView(new Image(getClass().getResource("/images/" + param.getValue().getActivityType().name() + ".png").toExternalForm()))));
-
         tcDate.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDate()));
         tcDate.setCellFactory(param -> new LocalDateCellFactory());
+        tcDate.setSortType(TableColumn.SortType.DESCENDING);
 
         tcDistance.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDistance() / 1000));
-        tcDistance.setCellFactory(param -> new NumberCellFactory(2, "km"));
+        tcDistance.setCellFactory(param -> new NumberCellFactory(1, "km"));
 
         tcDuration.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDrivingTime()));
         tcDuration.setCellFactory(param -> new DurationCellFactory());
 
-        activitiesTable.getSelectionModel().setSelectionMode(SelectionMode.SINGLE);
+        activitiesTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        activitiesTable.getSelectionModel().getSelectedItems().addListener(
+                (ListChangeListener<ActivityHeaderGroup>) c -> {
+                    while (c.next()) {
+                        if (c.wasRemoved()) {
+                            for (ActivityHeaderGroup activityHeaderGroup : c.getRemoved()) {
+                                lstSegments.getItems().removeAll(activityHeaderGroup.getActivityHeaders());
+                            }
+
+                        }
+                        if (c.wasAdded()) {
+                            for (ActivityHeaderGroup activityHeaderGroup : c.getAddedSubList()) {
+                                if (activityHeaderGroup != null) { // WTF? Why can this be null!?
+                                    lstSegments.getItems().addAll(activityHeaderGroup.getActivityHeaders());
+                                }
+                            }
+                        }
+
+                    }
+                    lstSegments.getItems().sort((o1, o2) -> o1.getStartTime().isAfter(o2.getStartTime()) ? 1 : 0);
+                }
+        );
+
         activitiesTable.setOnMouseClicked(event -> {
             if (event.getClickCount() == 2) {
-                final MultipleSelectionModel<ActivityDayHeader> selectionModel = activitiesTable.getSelectionModel();
-                if (!selectionModel.isEmpty()) {
-                    loadActivityDetails(selectionModel.getSelectedItem());
-                }
+                lstSegments.getCheckModel().checkAll();
+                openSelectedSections();
             }
         });
+
+        // Segment List
+        lstSegments.setCellFactory(listView ->
+                new CheckBoxListCell<>(item -> lstSegments.getItemBooleanProperty(item), new StringConverter<ActivityHeader>() {
+
+                    @Override
+                    public ActivityHeader fromString(String arg0) {
+                        return null;
+                    }
+
+                    @Override
+                    public String toString(ActivityHeader activityHeader) {
+                        final String startTime = activityHeader.getStartTime().format(DATE_TIME_FORMATTER);
+                        final String endTime = activityHeader.getEndTime().format(TIME_FORMATTER);
+                        final double distance = Math.floor(activityHeader.getDistance() / 1000);
+                        return startTime + " - " + endTime + " (" + distance + " km)";
+                    }
+
+                }));
 
         // -- Chart
         chartRangeSlider.setLowValue(0);
@@ -186,10 +229,16 @@ public class ActivitiesOverviewController {
             }
         });
 
+        chart.getChart().setOnScroll(event -> {
+            final double scrollAmount = event.getDeltaY();
+            chartRangeSlider.setLowValue(chartRangeSlider.getLowValue() + scrollAmount);
+            chartRangeSlider.setHighValue(chartRangeSlider.getHighValue() - scrollAmount);
+        });
+
         // -- Current ActivityDetails
-        this.currentActivityDay.addListener((observable, oldValue, newValue) -> {
+        this.selectedActivityDetails.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
-                activityDayChanged(newValue);
+                activityGroupChanged(newValue);
             }
         });
     }
@@ -209,45 +258,52 @@ public class ActivitiesOverviewController {
         info.show();
     }
 
-    private void activityDayChanged(final ActivityDay activityDay) {
-        refreshChart(activityDay);
-        refreshMap(activityDay);
+    private void activityGroupChanged(final ActivityDetailsGroup activityDetailsGroup) {
+        refreshChart(activityDetailsGroup);
+        refreshMap(activityDetailsGroup);
     }
 
     private void refreshStats() {
 
     }
 
-    private void refreshMap(final ActivityDay activityDay) {
-        final List<ActivityDetails> activityDaySegments = activityDay.getActivitySegments();
+    private void refreshMap(final ActivityDetailsGroup activityDetailsGroup) {
+        final List<ActivityDetails> activityDaySegments = activityDetailsGroup.getActivitySegments();
 
         final ObjectMapper objectMapper = new ObjectMapper();
-        final List<Coordinate> trackPoints = activityDaySegments.stream().flatMap(activityDetails -> activityDetails.getTrackPoints().stream()).collect(toList());
-        final List<LatLng> latLngs = trackPoints.stream().filter(Coordinate::isValid).map(LatLng::new).collect(toList());
+
         final WebEngine webEngine = webView.getEngine();
+        webEngine.executeScript("clearPolylines();");
 
-        try {
-            webEngine.executeScript("var bounds = new google.maps.LatLngBounds();");
-            latLngs.stream().forEach(e -> {
-                try {
-                    webEngine.executeScript("bounds.extend(new google.maps.LatLng(" + objectMapper.writeValueAsString(e) + "))");
-                } catch (JsonProcessingException e1) {
-                    logger.error("Failed to serialize LatLngs", e);
-                }
-            });
+        for (ActivityDetails activityDaySegment : activityDaySegments) {
+            final List<Coordinate> trackPoints = activityDaySegment.getTrackPoints();
+            final List<LatLng> latLngs = trackPoints.stream().filter(Coordinate::isValid).map(LatLng::new).collect(toList());
 
-            webEngine.executeScript("var track = " + objectMapper.writeValueAsString(latLngs) + ";");
-            webEngine.executeScript("drawPolyline(track);");
-            webEngine.executeScript("map.setCenter(bounds.getCenter())");
-            webEngine.executeScript("map.setZoom(12)");
-        } catch (JsonProcessingException e) {
-            logger.error("Failed to serialize LatLngs", e);
+
+            try {
+                webEngine.executeScript("var bounds = new google.maps.LatLngBounds();");
+                latLngs.stream().forEach(e -> {
+                    try {
+                        webEngine.executeScript("bounds.extend(new google.maps.LatLng(" + objectMapper.writeValueAsString(e) + "))");
+                    } catch (JsonProcessingException e1) {
+                        logger.error("Failed to serialize LatLngs", e);
+                    }
+                });
+
+                webEngine.executeScript("var track = " + objectMapper.writeValueAsString(latLngs) + ";");
+                webEngine.executeScript("addTrackSegment(track);");
+                webEngine.executeScript("map.setCenter(bounds.getCenter())");
+                webEngine.executeScript("map.setZoom(12)");
+            } catch (JsonProcessingException e) {
+                logger.error("Failed to serialize LatLngs", e);
+            }
         }
+
 
     }
 
-    private void refreshChart(final ActivityDay activityDay) {
-        final List<ActivityDetails> activityDaySegments = activityDay.getActivitySegments();
+    private void refreshChart(final ActivityDetailsGroup activityDetailsGroup) {
+        final List<ActivityDetails> activityDaySegments = activityDetailsGroup.getActivitySegments();
 
         chart.getData().clear();
         addChartSeries(rb.getString("altitude"), activityDaySegments.stream().flatMap(ad -> ad.getAltitudes().stream()).collect(toList()));
@@ -285,12 +341,14 @@ public class ActivitiesOverviewController {
         }
     }
 
-    private void loadActivityDetails(final ActivityDayHeader selectedItem) {
-        if (!activityDayService.isRunning()) {
-            activityDayService.reset();
-            activityDayService.setActivityIds(selectedItem.getActivityIds());
-            activityDayService.start();
+    @FXML
+    private void openSelectedSections() {
+        if (activityDetailsGroupService.isRunning()) {
+            activityDetailsGroupService.cancel();
         }
+        activityDetailsGroupService.reset();
+        activityDetailsGroupService.setActivityIds(lstSegments.getCheckModel().getCheckedItems().stream().filter(activityHeader -> activityHeader != null).map(ActivityHeader::getActivityId).collect(Collectors.toList()));
+        activityDetailsGroupService.start();
     }
 
     public void reloadHeaders() {
@@ -300,16 +358,16 @@ public class ActivitiesOverviewController {
         }
     }
 
-    public ActivityDay getCurrentActivityDay() {
-        return currentActivityDay.get();
+    public ActivityDetailsGroup getSelectedActivityDetails() {
+        return selectedActivityDetails.get();
     }
 
-    public ObjectProperty<ActivityDay> currentActivityDayProperty() {
-        return currentActivityDay;
+    public ObjectProperty<ActivityDetailsGroup> selectedActivityDetailsProperty() {
+        return selectedActivityDetails;
     }
 
-    public void setCurrentActivityDay(ActivityDay currentActivityDay) {
-        this.currentActivityDay.set(currentActivityDay);
+    public void setSelectedActivityDetails(ActivityDetailsGroup currentActivityDetailsGroup) {
+        this.selectedActivityDetails.set(currentActivityDetailsGroup);
     }
 
     public void exportSelectedActivity() {
@@ -319,7 +377,7 @@ public class ActivitiesOverviewController {
         final File file = fileChooser.showSaveDialog(chart.getScene().getWindow());
 
         if (file != null) {
-            gpxExportService.setActivityDetailsProperty(this.currentActivityDay.get().getActivitySegments());
+            gpxExportService.setActivityDetailsProperty(this.selectedActivityDetails.get().getActivitySegments());
             gpxExportService.setFileProperty(file);
             gpxExportService.restart();
         }
