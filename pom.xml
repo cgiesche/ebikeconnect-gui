@@ -123,6 +123,7 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>jaxb2-maven-plugin</artifactId>
+                <version>2.2</version>
                 <executions>
                     <execution>
                         <id>gpx-schema</id>
@@ -192,7 +193,7 @@
     </profiles>
 
     <properties>
-        <build-version>${version}</build-version>
+        <build-version>${project.version}</build-version>
     </properties>
 
     <licenses>
