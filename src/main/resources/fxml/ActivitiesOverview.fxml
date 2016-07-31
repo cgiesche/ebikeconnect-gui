@@ -36,7 +36,7 @@
                 <SplitPane dividerPositions="0.66" orientation="VERTICAL" HBox.hgrow="ALWAYS">
                         <AnchorPane minHeight="0.0" minWidth="0.0">
                             <padding>
-                                <Insets bottom="0" left="0" right="0" top="0"/>
+                                <Insets/>
                             </padding>
                             <WebView fx:id="webView" layoutX="150.0" layoutY="33.0" prefHeight="-1.0" prefWidth="-1.0" AnchorPane.bottomAnchor="0.0" AnchorPane.leftAnchor="0.0" AnchorPane.rightAnchor="0.0" AnchorPane.topAnchor="0.0"/>
                         </AnchorPane>
@@ -48,7 +48,7 @@
                                             <NumberAxis label="%driving-time" side="BOTTOM" fx:id="xAxis"/>
                                         </xAxis>
                                         <yAxis>
-                                            <NumberAxis autoRanging="true" side="LEFT"/>
+                                            <NumberAxis side="LEFT"/>
                                         </yAxis>
                                     </LineChart>
                                 </chart>

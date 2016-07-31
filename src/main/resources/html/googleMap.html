@@ -22,6 +22,8 @@
 
     var map;
     var polylines = [];
+    var chartMarker;
+
     var colorCycler = {
         colors: ['#01397D', '#3A8FF4', '#B200AA', '#F42AEB', '#551800', '#AA5939'],
         currentIndex: 0,
@@ -34,10 +36,15 @@
     };
 
     function initMap() {
-        map = new google.maps.Map(document.getElementById('map'), {
+        googleMap = new google.maps.Map(document.getElementById('map'), {
             center: {lat: 49.086254, lng: 8.553035},
             zoom: 6,
             streetViewControl: false
+        });
+        chartMarker = new google.maps.Marker({
+            map: googleMap,
+            clickable: false,
+            optimized: false
         });
     }
 
@@ -53,11 +60,15 @@
             strokeColor: colorCycler.nextColor(),
             strokeOpacity: 0.8,
             strokeWeight: 2,
-            map: map,
+            map: googleMap,
             path: coordinates
         });
 
         polylines.push(polyline);
+    }
+
+    function updateMarkerPosition(latLng) {
+        chartMarker.setPosition(latLng);
     }
 
 </script>

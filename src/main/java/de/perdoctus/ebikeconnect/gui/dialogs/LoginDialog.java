@@ -37,6 +37,7 @@ import javafx.scene.image.ImageView;
 import javafx.scene.layout.ColumnConstraints;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Priority;
+import org.apache.commons.configuration2.Configuration;
 
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
@@ -44,9 +45,16 @@ import java.util.ResourceBundle;
 
 public class LoginDialog extends Dialog<Credentials> {
 
+    public static final String CFG_PASSWORD = "password";
+    public static final String CFG_SAVE_PASSWORD = "savePassword";
+    public static final String CFG_USERNAME = "username";
+
     @Inject
     @Bundle("bundles/LoginDialog")
     private ResourceBundle rb;
+
+    @Inject
+    private Configuration config;
 
     @PostConstruct
     public void init() {
@@ -73,23 +81,31 @@ public class LoginDialog extends Dialog<Credentials> {
         grid.getColumnConstraints().add(new ColumnConstraints(-1, -1, -1, Priority.NEVER, HPos.LEFT, true));
         grid.getColumnConstraints().add(new ColumnConstraints(-1, -1, -1, Priority.ALWAYS, HPos.LEFT, true));
 
-        final String rbUsername = rb.getString("username");
+        final String rbUsername = rb.getString(CFG_USERNAME);
         final TextField txtUsername = new TextField();
         txtUsername.setPromptText(rbUsername);
+        txtUsername.setText(config.getString(CFG_USERNAME, ""));
 
         final Label lblUsername = new Label(rbUsername);
         lblUsername.setLabelFor(txtUsername);
         grid.add(lblUsername, 0, 0);
         grid.add(txtUsername, 1, 0);
 
-        final String rbPassword = rb.getString("password");
+        final String rbPassword = rb.getString(CFG_PASSWORD);
         final PasswordField txtPassword = new PasswordField();
         txtPassword.setPromptText(rbPassword);
+        if (config.getBoolean(CFG_SAVE_PASSWORD, false)) {
+            txtPassword.setText(config.getString(CFG_PASSWORD, ""));
+        }
 
         final Label lblPassword = new Label(rbPassword);
         lblPassword.setLabelFor(txtPassword);
         grid.add(lblPassword, 0, 1);
         grid.add(txtPassword, 1, 1);
+
+        final CheckBox cbSavePassword = new CheckBox(rb.getString("save-password"));
+        cbSavePassword.setSelected(config.getBoolean(CFG_SAVE_PASSWORD, false));
+        grid.add(cbSavePassword, 1, 2);
 
         getDialogPane().setContent(grid);
 
@@ -100,6 +116,14 @@ public class LoginDialog extends Dialog<Credentials> {
         setResultConverter(
                 buttonType -> {
                     if (buttonType == loginButtonType) {
+                        config.setProperty(CFG_USERNAME, txtUsername.getText());
+                        config.setProperty(CFG_SAVE_PASSWORD, cbSavePassword.isSelected());
+                        if (cbSavePassword.isSelected()) {
+                            config.setProperty(CFG_PASSWORD, txtPassword.getText());
+                            config.setProperty(CFG_PASSWORD, txtPassword.getText());
+                        } else {
+                            config.clearProperty(CFG_PASSWORD);
+                        }
                         return new Credentials(txtUsername.getText(), txtPassword.getText());
                     } else {
                         return null;

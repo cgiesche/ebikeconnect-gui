@@ -62,6 +62,7 @@ import org.slf4j.Logger;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -74,8 +75,11 @@ import java.util.stream.Collectors;
 import static java.util.stream.Collectors.toList;
 
 public class ActivitiesOverviewController {
+
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.MEDIUM);
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofLocalizedTime(FormatStyle.MEDIUM);
+    public static final NumberFormat NUMBER_FORMAT = NumberFormat.getNumberInstance();
+
     @Inject
     private Logger logger;
     @Inject
@@ -84,6 +88,8 @@ public class ActivitiesOverviewController {
     private ActivityDetailsGroupService activityDetailsGroupService;
     @Inject
     private GpxExportService gpxExportService;
+    @Inject
+    private ObjectMapper objectMapper;
     @Inject
     @Bundle("bundles/General")
     private ResourceBundle rb;
@@ -106,23 +112,29 @@ public class ActivitiesOverviewController {
     // Webview
     @FXML
     private WebView webView;
+    private WebEngine webEngine;
 
     // Chart
     @FXML
     private ToggleableSeriesChart<Number, Number> chart;
     @FXML
     private NumberAxis xAxis;
+
+
     @FXML
     private RangeSlider chartRangeSlider;
-
-
     // Properties
-    private ObjectProperty<ActivityDetailsGroup> selectedActivityDetails = new SimpleObjectProperty<>();
+    private ObjectProperty<ActivityDetailsGroup> currentActivityDetailsGroup = new SimpleObjectProperty<>();
 
     @FXML
     public void initialize() {
         logger.info("Init!");
-        webView.getEngine().load(getClass().getResource("/html/map.html").toExternalForm());
+
+        NUMBER_FORMAT.setMaximumFractionDigits(2);
+
+        webEngine = webView.getEngine();
+
+        webEngine.load(getClass().getResource("/html/googleMap.html").toExternalForm());
 
         // Activity Headers
         activityDaysHeaderService.setOnSucceeded(event -> {
@@ -135,7 +147,7 @@ public class ActivitiesOverviewController {
         activityHeadersProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Activity Details
-        activityDetailsGroupService.setOnSucceeded(event -> this.selectedActivityDetails.setValue(activityDetailsGroupService.getValue()));
+        activityDetailsGroupService.setOnSucceeded(event -> this.currentActivityDetailsGroup.setValue(activityDetailsGroupService.getValue()));
         activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
         final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDetailsGroupService);
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
@@ -202,8 +214,8 @@ public class ActivitiesOverviewController {
                     public String toString(ActivityHeader activityHeader) {
                         final String startTime = activityHeader.getStartTime().format(DATE_TIME_FORMATTER);
                         final String endTime = activityHeader.getEndTime().format(TIME_FORMATTER);
-                        final double distance = Math.floor(activityHeader.getDistance() / 1000);
-                        return startTime + " - " + endTime + " (" + distance + " km)";
+                        final double distance = activityHeader.getDistance() / 1000;
+                        return startTime + " - " + endTime + " (" + NUMBER_FORMAT.format(distance) + " km)";
                     }
 
                 }));
@@ -235,8 +247,29 @@ public class ActivitiesOverviewController {
             chartRangeSlider.setHighValue(chartRangeSlider.getHighValue() - scrollAmount);
         });
 
+        xAxis.setOnMouseMoved(event -> {
+            if (getCurrentActivityDetailsGroup() == null) {
+                return;
+            }
+
+            final Number valueForDisplay = xAxis.getValueForDisplay(event.getX());
+            final List<Coordinate> trackpoints = getCurrentActivityDetailsGroup().getJoinedTrackpoints();
+            final int index = valueForDisplay.intValue();
+            if (index >= 0 && index < trackpoints.size()) {
+                final Coordinate coordinate = trackpoints.get(index);
+                if (coordinate.isValid()) {
+                    final LatLng latLng = new LatLng(coordinate);
+                    try {
+                        webEngine.executeScript("updateMarkerPosition(" + objectMapper.writeValueAsString(latLng) + ");");
+                    } catch (JsonProcessingException e) {
+                        e.printStackTrace(); //TODO clean up ugly code!!!!--------------
+                    }
+                }
+            }
+        });
+
         // -- Current ActivityDetails
-        this.selectedActivityDetails.addListener((observable, oldValue, newValue) -> {
+        this.currentActivityDetailsGroup.addListener((observable, oldValue, newValue) -> {
             if (newValue != null) {
                 activityGroupChanged(newValue);
             }
@@ -263,16 +296,11 @@ public class ActivitiesOverviewController {
         refreshMap(activityDetailsGroup);
     }
 
-    private void refreshStats() {
-
-    }
-
     private void refreshMap(final ActivityDetailsGroup activityDetailsGroup) {
         final List<ActivityDetails> activityDaySegments = activityDetailsGroup.getActivitySegments();
 
         final ObjectMapper objectMapper = new ObjectMapper();
 
-        final WebEngine webEngine = webView.getEngine();
         webEngine.executeScript("clearPolylines();");
 
         for (ActivityDetails activityDaySegment : activityDaySegments) {
@@ -282,7 +310,7 @@ public class ActivitiesOverviewController {
 
             try {
                 webEngine.executeScript("var bounds = new google.maps.LatLngBounds();");
-                latLngs.stream().forEach(e -> {
+                latLngs.forEach(e -> {
                     try {
                         webEngine.executeScript("bounds.extend(new google.maps.LatLng(" + objectMapper.writeValueAsString(e) + "))");
                     } catch (JsonProcessingException e1) {
@@ -292,8 +320,8 @@ public class ActivitiesOverviewController {
 
                 webEngine.executeScript("var track = " + objectMapper.writeValueAsString(latLngs) + ";");
                 webEngine.executeScript("addTrackSegment(track);");
-                webEngine.executeScript("map.setCenter(bounds.getCenter())");
-                webEngine.executeScript("map.setZoom(12)");
+                webEngine.executeScript("googleMap.setCenter(bounds.getCenter())");
+                webEngine.executeScript("googleMap.setZoom(12)");
             } catch (JsonProcessingException e) {
                 logger.error("Failed to serialize LatLngs", e);
             }
@@ -358,16 +386,16 @@ public class ActivitiesOverviewController {
         }
     }
 
-    public ActivityDetailsGroup getSelectedActivityDetails() {
-        return selectedActivityDetails.get();
+    public ActivityDetailsGroup getCurrentActivityDetailsGroup() {
+        return currentActivityDetailsGroup.get();
     }
 
-    public ObjectProperty<ActivityDetailsGroup> selectedActivityDetailsProperty() {
-        return selectedActivityDetails;
+    public ObjectProperty<ActivityDetailsGroup> currentActivityDetailsGroupProperty() {
+        return currentActivityDetailsGroup;
     }
 
-    public void setSelectedActivityDetails(ActivityDetailsGroup currentActivityDetailsGroup) {
-        this.selectedActivityDetails.set(currentActivityDetailsGroup);
+    public void setCurrentActivityDetailsGroup(ActivityDetailsGroup currentActivityDetailsGroup) {
+        this.currentActivityDetailsGroup.set(currentActivityDetailsGroup);
     }
 
     public void exportSelectedActivity() {
@@ -377,7 +405,7 @@ public class ActivitiesOverviewController {
         final File file = fileChooser.showSaveDialog(chart.getScene().getWindow());
 
         if (file != null) {
-            gpxExportService.setActivityDetailsProperty(this.selectedActivityDetails.get().getActivitySegments());
+            gpxExportService.setActivityDetailsProperty(this.currentActivityDetailsGroup.get().getActivitySegments());
             gpxExportService.setFileProperty(file);
             gpxExportService.restart();
         }

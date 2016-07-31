@@ -28,10 +28,12 @@ package de.perdoctus.ebikeconnect.gui.models;
 
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class ActivityDetailsGroup {
 
     private List<ActivityDetails> activitySegments;
+    private List<Coordinate> joinedTrackpoints;
 
     public ActivityDetailsGroup(List<ActivityDetails> activitySegments) {
         this.activitySegments = activitySegments;
@@ -39,5 +41,15 @@ public class ActivityDetailsGroup {
 
     public List<ActivityDetails> getActivitySegments() {
         return activitySegments;
+    }
+
+    /**
+     * @return A list that contains all trackpoints from the segments joined to a single list.
+     */
+    public List<Coordinate> getJoinedTrackpoints() {
+        if (joinedTrackpoints == null) {
+            joinedTrackpoints = activitySegments.stream().flatMap(activityDetails -> activityDetails.getTrackPoints().stream()).collect(Collectors.toList());
+        }
+        return joinedTrackpoints;
     }
 }
