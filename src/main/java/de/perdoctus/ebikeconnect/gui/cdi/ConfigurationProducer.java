@@ -40,14 +40,24 @@ import java.io.IOException;
 
 public class ConfigurationProducer {
 
+    final File settingsPath = new File(System.getProperty("user.home") + File.separatorChar + "ebikeconnect-gui");
+
     @Inject
     private Logger logger;
 
     @Produces
     public Configuration createConfiguration() throws Exception {
-        final File configFile = new File(System.getProperty("user.home") + File.separatorChar + "ebikeconnect-gui" + File.separatorChar + "settings");
+        if (!settingsPath.exists() && !settingsPath.mkdirs()) {
+            final IOException exception = new IOException("Could not create settings file in " + settingsPath.getAbsolutePath());
+            logger.error(exception.getMessage(), exception);
+            throw exception;
+        }
+
+        final File configFile = new File(settingsPath.getAbsolutePath() + File.separatorChar + "settings");
         if (!configFile.exists() && !configFile.createNewFile()) {
-            throw new IOException("Could not create settings file in " + configFile.getAbsolutePath());
+            final IOException exception = new IOException("Could not create settings file in " + configFile.getAbsolutePath());
+            logger.error(exception.getMessage(), exception);
+            throw exception;
         }
 
         final Configurations configurations = new Configurations();

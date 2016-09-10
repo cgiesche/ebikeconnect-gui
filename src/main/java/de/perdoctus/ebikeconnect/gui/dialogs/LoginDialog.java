@@ -131,6 +131,11 @@ public class LoginDialog extends Dialog<Credentials> {
                 }
         );
 
-        txtUsername.requestFocus();
+        if (txtUsername.getText().isEmpty()) {
+            txtUsername.requestFocus();
+        } else {
+            txtPassword.requestFocus();
+            txtPassword.selectAll();
+        }
     }
 }

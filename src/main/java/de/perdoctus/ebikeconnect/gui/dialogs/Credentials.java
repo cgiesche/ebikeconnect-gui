@@ -32,10 +32,10 @@ import javafx.beans.property.StringProperty;
 
 public class Credentials {
 
-    final StringProperty username = new SimpleStringProperty();
-    final StringProperty password = new SimpleStringProperty();
+    private final StringProperty username = new SimpleStringProperty();
+    private final StringProperty password = new SimpleStringProperty();
 
-    public Credentials(String username, String password) {
+    Credentials(final String username, final String password) {
         this.username.setValue(username);
         this.password.setValue(password);
     }

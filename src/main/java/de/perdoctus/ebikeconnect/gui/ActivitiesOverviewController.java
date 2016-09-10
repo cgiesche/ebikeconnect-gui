@@ -133,7 +133,6 @@ public class ActivitiesOverviewController {
         NUMBER_FORMAT.setMaximumFractionDigits(2);
 
         webEngine = webView.getEngine();
-
         webEngine.load(getClass().getResource("/html/googleMap.html").toExternalForm());
 
         // Activity Headers
@@ -382,6 +381,7 @@ public class ActivitiesOverviewController {
     public void reloadHeaders() {
         logger.info("Reloading Headers!");
         if (!activityDaysHeaderService.isRunning()) {
+            activitiesTable.getSelectionModel().clearSelection();
             activityDaysHeaderService.restart();
         }
     }
@@ -392,10 +392,6 @@ public class ActivitiesOverviewController {
 
     public ObjectProperty<ActivityDetailsGroup> currentActivityDetailsGroupProperty() {
         return currentActivityDetailsGroup;
-    }
-
-    public void setCurrentActivityDetailsGroup(ActivityDetailsGroup currentActivityDetailsGroup) {
-        this.currentActivityDetailsGroup.set(currentActivityDetailsGroup);
     }
 
     public void exportSelectedActivity() {

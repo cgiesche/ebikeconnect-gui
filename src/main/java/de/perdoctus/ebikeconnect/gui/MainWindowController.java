@@ -137,6 +137,7 @@ public class MainWindowController {
                     this.loginResponse.setValue(fakeLoginResponse);
                 }
             } catch (LoginFailedException e) {
+                logger.warn("Login failed.", e);
                 requestLogin();
             }
         } else {
