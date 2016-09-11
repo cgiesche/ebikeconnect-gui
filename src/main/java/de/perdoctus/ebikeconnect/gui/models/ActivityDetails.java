@@ -32,7 +32,7 @@ import java.util.List;
 
 public class ActivityDetails implements Serializable {
 
-    private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 2L;
 
     private ActivityHeader activityHeader;
 
@@ -46,6 +46,7 @@ public class ActivityDetails implements Serializable {
     private List<Float> motorTorques;
     private List<Short> motorRevolutionRates;
     private List<Float> energyEconomies;
+    private List<Short> gainedDistances;
 
     public ActivityHeader getActivityHeader() {
         return activityHeader;
@@ -157,5 +158,16 @@ public class ActivityDetails implements Serializable {
     @Override
     public String toString() {
         return "ActivityDetails{activityHeader=" + activityHeader + '}';
+    }
+
+    /**
+     * @return All recorded distance values (in meters). Values are evenly distributed over driving time.
+     */
+    public void setGainedDistances(List<Short> gainedDistances) {
+        this.gainedDistances = gainedDistances;
+    }
+
+    public List<Short> getGainedDistances() {
+        return gainedDistances;
     }
 }

@@ -38,12 +38,13 @@ import de.perdoctus.fx.Bundle;
 import javafx.application.Platform;
 import javafx.beans.property.ObjectProperty;
 import javafx.beans.property.SimpleObjectProperty;
+import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
-import javafx.scene.control.MenuItem;
+import javafx.scene.control.Menu;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
@@ -77,7 +78,7 @@ public class MainWindowController {
     @FXML
     public TabPane tabPane;
     @FXML
-    private MenuItem mnuItemExportGPX;
+    private Menu mnuExport;
 
     private ActivitiesOverviewController activitiesOverviewController;
 
@@ -94,7 +95,7 @@ public class MainWindowController {
         final Parent parent = fxmlLoader.load(getClass().getResourceAsStream("/fxml/ActivitiesOverview.fxml"));
         this.activitiesOverviewController = fxmlLoader.getController();
 
-        final Tab tab = new Tab(rb.getString("aktivities"));
+        final Tab tab = new Tab(rb.getString("activities"));
         tab.setContent(parent);
         tabPane.getTabs().add(tab);
 
@@ -104,7 +105,7 @@ public class MainWindowController {
             }
         });
 
-        mnuItemExportGPX.disableProperty().bind(activitiesOverviewController.currentActivityDetailsGroupProperty().isNull());
+        mnuExport.disableProperty().bind(activitiesOverviewController.currentActivityDetailsGroupProperty().isNull());
     }
 
     private void initUserTab() {
@@ -146,7 +147,11 @@ public class MainWindowController {
     }
 
     public void exportCurrentActivityAsGPX() {
-        activitiesOverviewController.exportSelectedActivity();
+        activitiesOverviewController.exportCurrentActivityAsGPX();
+    }
+
+    public void exportCurrentActivityAsTCX(ActionEvent actionEvent) {
+        activitiesOverviewController.exportCurrentActivityAsTCX();
     }
 
     public void exitApplication() {

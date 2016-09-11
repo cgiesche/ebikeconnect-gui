@@ -36,7 +36,9 @@ import de.perdoctus.ebikeconnect.gui.models.*;
 import de.perdoctus.ebikeconnect.gui.models.json.LatLng;
 import de.perdoctus.ebikeconnect.gui.services.ActivityDaysHeaderService;
 import de.perdoctus.ebikeconnect.gui.services.ActivityDetailsGroupService;
-import de.perdoctus.ebikeconnect.gui.services.GpxExportService;
+import de.perdoctus.ebikeconnect.gui.services.export.ExportService;
+import de.perdoctus.ebikeconnect.gui.services.export.GpxExportService;
+import de.perdoctus.ebikeconnect.gui.services.export.TcxExportService;
 import de.perdoctus.ebikeconnect.gui.util.DurationFormatter;
 import de.perdoctus.fx.Bundle;
 import de.perdoctus.fx.ToggleableSeriesChart;
@@ -89,38 +91,40 @@ public class ActivitiesOverviewController {
     @Inject
     private GpxExportService gpxExportService;
     @Inject
+    private TcxExportService tcxExportService;
+    @Inject
     private ObjectMapper objectMapper;
+
     @Inject
     @Bundle("bundles/General")
     private ResourceBundle rb;
-
     // Activities Overview
     @FXML
     private TableView<ActivityHeaderGroup> activitiesTable;
-    @FXML
-    private TableColumn<ActivityHeaderGroup, Number> tcDistance;
 
     @FXML
+    private TableColumn<ActivityHeaderGroup, Number> tcDistance;
+    @FXML
     private TableColumn<ActivityHeaderGroup, LocalDate> tcDate;
+
     @FXML
     private TableColumn<ActivityHeaderGroup, Duration> tcDuration;
 
     // Activity Segments
     @FXML
     public CheckListView<ActivityHeader> lstSegments;
-
     // Webview
     @FXML
     private WebView webView;
-    private WebEngine webEngine;
 
+    private WebEngine webEngine;
     // Chart
     @FXML
     private ToggleableSeriesChart<Number, Number> chart;
+
+
     @FXML
     private NumberAxis xAxis;
-
-
     @FXML
     private RangeSlider chartRangeSlider;
     // Properties
@@ -152,12 +156,11 @@ public class ActivitiesOverviewController {
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
         // Gpx Export
-        gpxExportService.setOnSucceeded(event -> {
-            gpxExportFinished();
-        });
-        gpxExportService.setOnFailed(event -> {
-            handleError("Failed to generate GPX File", gpxExportService.getException());
-        });
+        gpxExportService.setOnSucceeded(event -> gpxExportFinished());
+        gpxExportService.setOnFailed(event -> handleError("Failed to generate GPX File", gpxExportService.getException()));
+
+        tcxExportService.setOnSucceeded(event -> gpxExportFinished());
+        tcxExportService.setOnFailed(event -> handleError("Failed to generate TCX File", tcxExportService.getException()));
 
         // ActivityTable
         tcDate.setCellValueFactory(param -> new SimpleObjectProperty<>(param.getValue().getDate()));
@@ -394,17 +397,25 @@ public class ActivitiesOverviewController {
         return currentActivityDetailsGroup;
     }
 
-    public void exportSelectedActivity() {
+    public void exportCurrentActivityAsGPX() {
+        exportCurrentActivity(gpxExportService);
+    }
+
+    public void exportCurrentActivityAsTCX() {
+        exportCurrentActivity(tcxExportService);
+    }
+
+    private void exportCurrentActivity(final ExportService exportService) {
         final FileChooser fileChooser = new FileChooser();
-        fileChooser.setTitle(rb.getString("gpx-export"));
-        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(rb.getString("gpx-file"), "*.gpx"));
+        fileChooser.setTitle(exportService.getFileTypeDescription());
+        fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(exportService.getFileTypeDescription(), "*." + exportService.getFileExtension()));
+
         final File file = fileChooser.showSaveDialog(chart.getScene().getWindow());
 
         if (file != null) {
-            gpxExportService.setActivityDetailsProperty(this.currentActivityDetailsGroup.get().getActivitySegments());
-            gpxExportService.setFileProperty(file);
-            gpxExportService.restart();
+            exportService.setActivityDetails(this.currentActivityDetailsGroup.get().getActivitySegments());
+            exportService.setFile(file);
+            exportService.restart();
         }
     }
-
 }

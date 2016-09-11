@@ -6,7 +6,7 @@
 
     <groupId>de.perdoctus.ebikeconnect</groupId>
     <artifactId>ebikeconnect-gui</artifactId>
-    <version>0.4-SNAPSHOT</version>
+    <version>0.5-SNAPSHOT</version>
 
     <organization>
         <name>Christoph Giesche</name>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>org.controlsfx</groupId>
             <artifactId>controlsfx</artifactId>
-            <version>8.40.11</version>
+            <version>8.40.12</version>
         </dependency>
 
         <!-- caching -->
@@ -144,14 +144,48 @@
                         </goals>
                         <configuration>
                             <sources>
-                                <source>src/main/xsd/gpx.xsd</source>
-                                <source>src/main/xsd/TrackPointExtensionv1.xsd</source>
+                                <source>src/main/xsd/gpx/gpx.xsd</source>
+                                <source>src/main/xsd/gpx/TrackPointExtensionv1.xsd</source>
                             </sources>
                             <xjbSources>
                                 <xjbSource>src/main/bindings</xjbSource>
                             </xjbSources>
                             <encoding>UTF-8</encoding>
                             <packageName>de.perdoctus.gpx</packageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>tcx-schema</id>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <clearOutputDir>false</clearOutputDir>
+                            <sources>
+                                <source>src/main/xsd/tcx/TrainingCenterDatabasev2.xsd</source>
+                            </sources>
+                            <xjbSources>
+                                <xjbSource>src/main/bindings</xjbSource>
+                            </xjbSources>
+                            <encoding>UTF-8</encoding>
+                            <packageName>de.perdoctus.tcx</packageName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>tcx-extension-schema</id>
+                        <goals>
+                            <goal>xjc</goal>
+                        </goals>
+                        <configuration>
+                            <clearOutputDir>false</clearOutputDir>
+                            <sources>
+                                <source>src/main/xsd/tcx/ActivityExtensionv2.xsd</source>
+                            </sources>
+                            <xjbSources>
+                                <xjbSource>src/main/bindings</xjbSource>
+                            </xjbSources>
+                            <encoding>UTF-8</encoding>
+                            <packageName>de.perdoctus.tcx.extension</packageName>
                         </configuration>
                     </execution>
                 </executions>

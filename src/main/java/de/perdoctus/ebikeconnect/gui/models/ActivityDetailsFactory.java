@@ -63,7 +63,7 @@ public class ActivityDetailsFactory {
                 activityDetails.setMotorTorques(activityData1.getMotorTorque());
                 activityDetails.setMotorRevolutionRates(activityData1.getMotorRevolutionRate());
                 activityDetails.setEnergyEconomies(activityData1.getEnergyEconomy());
-
+                activityDetails.setGainedDistances(activityData1.getDistanceGained());
             }
             if (activityData instanceof EBCRawActivityData600s) {
                 final EBCRawActivityData600s activityData600 = (EBCRawActivityData600s) activityData;

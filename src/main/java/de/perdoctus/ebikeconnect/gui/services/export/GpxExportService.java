@@ -1,4 +1,4 @@
-package de.perdoctus.ebikeconnect.gui.services;
+package de.perdoctus.ebikeconnect.gui.services.export;
 
 /*
  * #%L
@@ -32,18 +32,13 @@ import de.perdoctus.ebikeconnect.gui.models.Coordinate;
 import de.perdoctus.ebikeconnect.jaxb.GpxPrefixMapper;
 import de.perdoctus.fx.Bundle;
 import de.perdoctus.gpx.*;
-import javafx.beans.property.ObjectProperty;
-import javafx.beans.property.SimpleObjectProperty;
-import javafx.concurrent.Service;
 import javafx.concurrent.Task;
-import javafx.stage.FileChooser;
 
 import javax.inject.Inject;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBElement;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Marshaller;
-import java.io.File;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -52,7 +47,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.ResourceBundle;
 
-public class GpxExportService extends Service<Void> {
+public class GpxExportService extends ExportService {
 
     @Inject
     @Bundle("bundles/General")
@@ -60,16 +55,23 @@ public class GpxExportService extends Service<Void> {
 
     private final static ObjectFactory OBJECT_FACTORY = new ObjectFactory();
 
-    private ObjectProperty<List<ActivityDetails>> activityDetailsProperty = new SimpleObjectProperty<>();
-    private ObjectProperty<File> fileProperty = new SimpleObjectProperty<>();
+    @Override
+    public String getFileExtension() {
+        return "gpx";
+    }
+
+    @Override
+    public String getFileTypeDescription() {
+        return rb.getString("gpx-file");
+    }
 
     @Override
     protected Task<Void> createTask() {
         return new Task<Void>() {
             @Override
             protected Void call() throws Exception {
-                if (activityDetailsProperty.isNotNull().and(fileProperty.isNotNull()).get()) {
-                    final JAXBElement<GpxType> gpxDocument = createGpxDocument(activityDetailsProperty.get());
+                if (activityDetails.isNotNull().and(file.isNotNull()).get()) {
+                    final JAXBElement<GpxType> gpxDocument = createGpxDocument(activityDetails.get());
                     saveGpxDocument(gpxDocument);
                 } else {
                     throw new IllegalArgumentException("No activityDetails given.");
@@ -81,7 +83,7 @@ public class GpxExportService extends Service<Void> {
 
                 final TrkType track = new TrkType();
 
-                for (ActivityDetails activityDetails : activityDetailsList) {
+                for (final ActivityDetails activityDetails : activityDetailsList) {
                     final TrksegType trackSegment = createTrackSegment(activityDetails);
                     track.getTrkseg().add(trackSegment);
                 }
@@ -90,7 +92,7 @@ public class GpxExportService extends Service<Void> {
 
                 final GpxType gpxType = new GpxType();
                 gpxType.setVersion("1.1");
-                gpxType.setCreator(rb.getString("application-name"));
+                gpxType.setCreator(rb.getString("application-name") + " " + rb.getString("app-version"));
                 gpxType.setMetadata(metadata);
                 gpxType.getTrk().add(track);
 
@@ -109,8 +111,8 @@ public class GpxExportService extends Service<Void> {
 
                     if (coordinate.isValid()) {
                         final TrackPointExtensionT pointExtensionT = new TrackPointExtensionT();
-                        pointExtensionT.setCad(getValueMatchingTrackpoint(trackPointNr, trackpointCount, activityDetails.getCadences()));
-                        pointExtensionT.setHr(getValueMatchingTrackpoint(trackPointNr, trackpointCount, activityDetails.getHeartRate()));
+                        pointExtensionT.setCad(getValueMatchingValueForTrackpoint(trackPointNr, trackpointCount, activityDetails.getCadences()));
+                        pointExtensionT.setHr(getValueMatchingValueForTrackpoint(trackPointNr, trackpointCount, activityDetails.getHeartRate()));
 
                         final ExtensionsType extensionsType = new ExtensionsType();
                         extensionsType.getAny().add(OBJECT_FACTORY.createTrackPointExtension(pointExtensionT));
@@ -121,7 +123,7 @@ public class GpxExportService extends Service<Void> {
                         trackpoint.setLat(BigDecimal.valueOf(coordinate.getLat()));
                         trackpoint.setLon(BigDecimal.valueOf(coordinate.getLng()));
                         trackpoint.setTime(trackpointTime);
-                        trackpoint.setEle(BigDecimal.valueOf(getValueMatchingTrackpoint(trackPointNr, trackpointCount, activityDetails.getAltitudes())));
+                        trackpoint.setEle(BigDecimal.valueOf(getValueMatchingValueForTrackpoint(trackPointNr, trackpointCount, activityDetails.getAltitudes())));
                         trackpoint.setExtensions(extensionsType);
 
                         trackSegment.getTrkpt().add(trackpoint);
@@ -131,15 +133,11 @@ public class GpxExportService extends Service<Void> {
             }
 
             private void saveGpxDocument(final JAXBElement<GpxType> gpxDocument) throws JAXBException {
-                final FileChooser fileChooser = new FileChooser();
-                fileChooser.setTitle(rb.getString("gpx-export"));
-                fileChooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(rb.getString("gpx-file"), "*.gpx"));
-
                 final JAXBContext jaxbContext = JAXBContext.newInstance("de.perdoctus.gpx");
                 final Marshaller marshaller = jaxbContext.createMarshaller();
                 marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
                 marshaller.setProperty("com.sun.xml.bind.namespacePrefixMapper", new GpxPrefixMapper());
-                marshaller.marshal(gpxDocument, fileProperty.get());
+                marshaller.marshal(gpxDocument, file.get());
             }
 
             private MetadataType createMetadata(List<ActivityDetails> activityDetailsList) {
@@ -148,48 +146,25 @@ public class GpxExportService extends Service<Void> {
                 final LocalDateTime startTime = activityDetailsList.stream().map(activityDetails -> activityDetails.getActivityHeader().getStartTime()).min((o1, o2) -> o1.isAfter(o2) ? 1 : 0).get();
                 final LocalDateTime endTime = activityDetailsList.stream().map(activityDetails -> activityDetails.getActivityHeader().getEndTime()).max((o1, o2) -> o1.isAfter(o2) ? 1 : 0).get();
 
-                metadata.setName(rb.getString("aktivity") + " " + startTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)));
-                metadata.setDesc(rb.getString("aktivity") + ": " + startTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)) +
+                metadata.setName(rb.getString("activity") + " " + startTime.format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL)));
+                metadata.setDesc(rb.getString("activity") + ": " + startTime.format(DateTimeFormatter.ofLocalizedDateTime(FormatStyle.SHORT, FormatStyle.SHORT)) +
                         " - " + endTime.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT)));
                 metadata.setTime(startTime);
                 return metadata;
             }
 
-            private <A> A getValueMatchingTrackpoint(int trackPointNr, int trackPointCount, List<A> cadences) {
-                final float cadenceInfosPerTrackpoint = cadences.size() / (float) trackPointCount;
-                int cadenceInfoIndex = getMatchingIndex(trackPointNr, cadenceInfosPerTrackpoint);
-                return cadences.get(cadenceInfoIndex);
+            private <A> A getValueMatchingValueForTrackpoint(int trackPointNr, int trackPointCount, List<A> values) {
+                final float valuesPerTrackpoint = values.size() / (float) trackPointCount;
+                int matchingValueIndex = getMatchingIndex(trackPointNr, valuesPerTrackpoint);
+                return values.get(matchingValueIndex);
             }
 
-            private int getMatchingIndex(int trackPointNr, float heightInfosPerTrackpoint) {
-                float nearestHeightInfo = trackPointNr * heightInfosPerTrackpoint;
+            private int getMatchingIndex(int trackPointNr, float valuesPerTrackpoint) {
+                float nearestHeightInfo = trackPointNr * valuesPerTrackpoint;
                 return (int) Math.floor(nearestHeightInfo);
             }
 
         };
     }
 
-    public List<ActivityDetails> getActivityDetailsProperty() {
-        return activityDetailsProperty.get();
-    }
-
-    public ObjectProperty<List<ActivityDetails>> activityDetailsPropertyProperty() {
-        return activityDetailsProperty;
-    }
-
-    public void setActivityDetailsProperty(List<ActivityDetails> activityDetailsProperty) {
-        this.activityDetailsProperty.set(activityDetailsProperty);
-    }
-
-    public File getFileProperty() {
-        return fileProperty.get();
-    }
-
-    public ObjectProperty<File> filePropertyProperty() {
-        return fileProperty;
-    }
-
-    public void setFileProperty(File fileProperty) {
-        this.fileProperty.set(fileProperty);
-    }
 }
