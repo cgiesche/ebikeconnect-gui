@@ -9,6 +9,7 @@ Current features
    + Overview about all recorded activities
    + View activity track on map
    + Export activity as GPX (with Garmin Extension: Cadence, Heart-Rate)
+   + Export activity as TCX (Training Center XML)
    + View activity statistics:
       + Height (m)
       + Speed (km/h)
