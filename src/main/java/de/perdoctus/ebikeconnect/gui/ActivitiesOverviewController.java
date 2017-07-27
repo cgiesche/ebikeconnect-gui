@@ -151,7 +151,7 @@ public class ActivitiesOverviewController {
 
         // Activity Details
         activityDetailsGroupService.setOnSucceeded(event -> this.currentActivityDetailsGroup.setValue(activityDetailsGroupService.getValue()));
-        activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
+        activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDetailsGroupService.getException()));
         final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDetailsGroupService);
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
