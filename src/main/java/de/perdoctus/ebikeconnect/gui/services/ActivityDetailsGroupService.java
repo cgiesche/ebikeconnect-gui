@@ -144,7 +144,7 @@ public class ActivityDetailsGroupService extends Service<ActivityDetailsGroup> {
         }
 
         private ActivityDetails loadAndPersist(final Long key, final File cacheFile) throws UnauthenticatedException {
-            final ActivityDetails activityDetails = ActivityDetailsFactory.createFrom(ebikeConnectService.getRawActivity(key));
+            final ActivityDetails activityDetails = ActivityDetailsFactory.createFrom(/*ebikeConnectService.getRawActivity(key)*/ ebikeConnectService.getActivityDetails(key));
             try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(cacheFile))) {
                 os.writeObject(activityDetails);
                 logger.debug("Successfully persisted {} to disk.", activityDetails);

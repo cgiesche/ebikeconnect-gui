@@ -151,7 +151,7 @@ public class ActivitiesOverviewController {
 
         // Activity Details
         activityDetailsGroupService.setOnSucceeded(event -> this.currentActivityDetailsGroup.setValue(activityDetailsGroupService.getValue()));
-        activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDaysHeaderService.getException()));
+        activityDetailsGroupService.setOnFailed(event -> logger.error("Failed to obtain ActivityDetails!", activityDetailsGroupService.getException()));
         final ProgressDialog activityDetailsProgressDialog = new ProgressDialog(activityDetailsGroupService);
         activityDetailsProgressDialog.initModality(Modality.APPLICATION_MODAL);
 
@@ -336,20 +336,22 @@ public class ActivitiesOverviewController {
         final List<ActivityDetails> activityDaySegments = activityDetailsGroup.getActivitySegments();
 
         chart.getData().clear();
-        addChartSeries(rb.getString("altitude"), activityDaySegments.stream().flatMap(ad -> ad.getAltitudes().stream()).collect(toList()));
-        addChartSeries(rb.getString("speed"), activityDaySegments.stream().flatMap(ad -> ad.getSpeeds().stream()).collect(toList()));
-        addChartSeries(rb.getString("heart-rate"), activityDaySegments.stream().flatMap(ad -> ad.getHeartRate().stream()).collect(toList()));
-        addChartSeries(rb.getString("cadence"), activityDaySegments.stream().flatMap(ad -> ad.getCadences().stream()).collect(toList()));
-        addChartSeries(rb.getString("driver-torque"), activityDaySegments.stream().flatMap(ad -> ad.getDriverTorques().stream()).collect(toList()));
-        addChartSeries(rb.getString("motor-torque"), activityDaySegments.stream().flatMap(ad -> ad.getMotorTorques().stream()).collect(toList()));
-        addChartSeries(rb.getString("motor-revolutions"), activityDaySegments.stream().flatMap(ad -> ad.getMotorRevolutionRates().stream()).collect(toList()));
-        addChartSeries(rb.getString("energy-economy"), activityDaySegments.stream().flatMap(ad -> ad.getEnergyEconomies().stream()).collect(toList()));
+        addChartSeries(rb.getString("altitude"), activityDaySegments.stream().filter(ad -> ad.getAltitudes() != null).flatMap(ad -> ad.getAltitudes().stream()).collect(toList()));
+        addChartSeries(rb.getString("speed"), activityDaySegments.stream().filter(ad -> ad.getSpeeds() != null).flatMap(ad -> ad.getSpeeds().stream()).collect(toList()));
+        addChartSeries(rb.getString("heart-rate"), activityDaySegments.stream().filter(ad -> ad.getHeartRate() != null).flatMap(ad -> ad.getHeartRate().stream()).collect(toList()));
+        addChartSeries(rb.getString("cadence"), activityDaySegments.stream().filter(ad -> ad.getCadences() != null).flatMap(ad -> ad.getCadences().stream()).collect(toList()));
+        addChartSeries(rb.getString("driver-torque"), activityDaySegments.stream().filter(ad -> ad.getDriverTorques() != null).flatMap(ad -> ad.getDriverTorques().stream()).collect(toList()));
+        addChartSeries(rb.getString("motor-torque"), activityDaySegments.stream().filter(ad -> ad.getMotorTorques() != null).flatMap(ad -> ad.getMotorTorques().stream()).collect(toList()));
+        addChartSeries(rb.getString("motor-revolutions"), activityDaySegments.stream().filter(ad -> ad.getMotorRevolutionRates() != null).flatMap(ad -> ad.getMotorRevolutionRates().stream()).collect(toList()));
+        addChartSeries(rb.getString("energy-economy"), activityDaySegments.stream().filter(ad -> ad.getEnergyEconomies() != null).flatMap(ad -> ad.getEnergyEconomies().stream()).collect(toList()));
         chartRangeSlider.setLowValue(0);
         chartRangeSlider.setHighValue(chartRangeSlider.getMax());
     }
 
     private void addChartSeries(final String title, final List<? extends Number> samples) {
         logger.info(title + ": " + samples.size() + " samples.");
+
+        if (samples.size() == 0) return;
 
         final XYChart.Series<Number, Number> series = new XYChart.Series<>();
         series.setName(title);
