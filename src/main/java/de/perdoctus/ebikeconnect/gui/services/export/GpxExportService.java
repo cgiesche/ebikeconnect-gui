@@ -123,7 +123,10 @@ public class GpxExportService extends ExportService {
                         trackpoint.setLat(BigDecimal.valueOf(coordinate.getLat()));
                         trackpoint.setLon(BigDecimal.valueOf(coordinate.getLng()));
                         trackpoint.setTime(trackpointTime);
-                        trackpoint.setEle(BigDecimal.valueOf(getValueMatchingValueForTrackpoint(trackPointNr, trackpointCount, activityDetails.getAltitudes())));
+                        final Float matchingValueForTrackpoint = getValueMatchingValueForTrackpoint(trackPointNr, trackpointCount, activityDetails.getAltitudes());
+                        if (matchingValueForTrackpoint != null) {
+                            trackpoint.setEle(BigDecimal.valueOf(matchingValueForTrackpoint));
+                        }
                         trackpoint.setExtensions(extensionsType);
 
                         trackSegment.getTrkpt().add(trackpoint);
