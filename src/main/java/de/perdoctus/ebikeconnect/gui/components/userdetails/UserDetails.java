@@ -68,14 +68,31 @@ public class UserDetails extends GridPane {
     }
 
     private void fillGridWithUserDetails(final EBCUser user) {
-        addRow(rb.getString("lastname"), user.getLastName());
-        addRow(rb.getString("firstname"), user.getFirstName());
-        addRow(rb.getString("gender"), user.getGender());
-        addRow(rb.getString("email-address"), user.getEmail());
-        addRow(rb.getString("date-of-birth"), user.getDateOfBirth());
-        addRow(rb.getString("height"), String.valueOf(user.getHeight()));
-        addRow(rb.getString("weight"), String.valueOf(user.getWeight()));
-        addRow(rb.getString("activity-level"), String.valueOf(user.getActivityLevel()));
+        addRow(rb.getString("userdata.lastname"), user.getLastName());
+        addRow(rb.getString("userdata.firstname"), user.getFirstName());
+        addRow(rb.getString("userdata.gender"),
+                user.getGender() != null ? rb.getString("userdata.gender." + user.getGender()) : rb.getString("userdata.gender.unknown"));
+        addRow(rb.getString("userdata.email-address"), user.getEmail());
+        addRow(rb.getString("userdata.date-of-birth"), user.getDateOfBirth());
+        addRow(rb.getString("userdata.height"), String.valueOf(user.getHeight()));
+        addRow(rb.getString("userdata.weight"), String.valueOf(user.getWeight()));
+        addRow(rb.getString("userdata.activity-level"), String.valueOf(user.getActivityLevel()));
+        addRow("");
+        addRow(rb.getString("userdata.home"));
+        addRow(rb.getString("userdata.home.street"),
+                user.getHomeAddress().getStreet().concat(" ").concat(user.getHomeAddress().getNumber()));
+        addRow(rb.getString("userdata.home.city"),
+                user.getHomeAddress().getZip().concat(" ").concat(user.getHomeAddress().getCity()));
+        addRow("");
+        addRow(rb.getString("userdata.work"));
+        addRow(rb.getString("userdata.work.street"),
+                user.getWorkAddress().getStreet().concat(" ").concat(user.getWorkAddress().getNumber()));
+        addRow(rb.getString("userdata.work.city"),
+                user.getWorkAddress().getZip().concat(" ").concat(user.getWorkAddress().getCity()));
+    }
+
+    private void addRow(String key) {
+        addRow(key, "");
     }
 
     private void addRow(String key, String value) {
