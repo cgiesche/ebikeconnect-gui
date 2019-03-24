@@ -45,6 +45,7 @@ import javafx.scene.Parent;
 import javafx.scene.control.*;
 import javafx.scene.control.Label;
 import javafx.scene.control.Menu;
+import javafx.scene.control.MenuBar;
 import javafx.scene.control.ScrollPane;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.GridPane;
@@ -77,6 +78,10 @@ public class MainWindowController {
     private ResourceBundle rb;
     @FXML
     public TabPane tabPane;
+
+    @FXML
+    private MenuBar menuBar;
+
     @FXML
     private Menu mnuExport;
 
@@ -89,6 +94,10 @@ public class MainWindowController {
         initActivitiesTab();
 
         Platform.runLater(this::requestLogin);
+
+        if( System.getProperty("os.name","UNKNOWN").toLowerCase().startsWith("mac")) {
+            menuBar.setUseSystemMenuBar(true);
+        }
     }
 
     private void initActivitiesTab() throws Exception {
